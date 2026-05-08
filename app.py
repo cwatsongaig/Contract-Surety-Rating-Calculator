@@ -115,15 +115,15 @@ def render_copy_image_component(card_id: str, card_html: str, height: int = 80):
         <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
         <style>
             body {{ margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }}
-            .btn-row {{ display: flex; gap: 10px; margin-bottom: 12px; }}
+            .btn-row {{ display: flex; gap: 10px; margin-bottom: 8px; }}
             .copy-btn {{
-                padding: 8px 18px; border-radius: 6px; font-size: 13px; font-weight: 600;
+                padding: 6px 14px; border-radius: 6px; font-size: 13px; font-weight: 600;
                 cursor: pointer; border: none; color: white; background: {NAVY};
                 transition: opacity 0.2s;
             }}
             .copy-btn:hover {{ opacity: 0.85; }}
             .status {{
-                padding: 8px 18px; border-radius: 6px; font-size: 13px; font-weight: 600;
+                padding: 6px 14px; border-radius: 6px; font-size: 13px; font-weight: 600;
                 display: none; background: #059669; color: white; border: none;
             }}
         </style>
@@ -459,10 +459,11 @@ def show_rate_lookup_card():
         )
         card_blocks += '</div>'
 
-    # Render card
+    # Render card - calculate tight height based on content
     card_html = render_rate_card("Rate Card", card_blocks, "lu-card")
     num_rows = len(selected)
-    card_height = 120 + (num_rows * 240) + 50
+    # Logo header ~70px + per rate block ~(header 40px + 7 tier rows * 26px + separator 14px) + button 40px
+    card_height = 70 + (num_rows * (40 + 7 * 26 + 14)) + 40
     render_copy_image_component("lu-card", card_html, height=card_height)
 
     # Download as image (secondary option)
@@ -485,7 +486,8 @@ def show_premium_card():
 
     card_content = data.get("html", "")
     card_html = render_rate_card("Premium Rate Card", card_content, "prem-card")
-    render_copy_image_component("prem-card", card_html, height=480)
+    # Header 70px + info 50px + table header 30px + ~6 rows * 28px + totals 80px + button 40px
+    render_copy_image_component("prem-card", card_html, height=440)
 
     img_bytes = generate_rate_card_image(card_content)
     st.download_button(
@@ -506,7 +508,8 @@ def show_compare_card():
 
     card_content = data.get("html", "")
     card_html = render_rate_card("Plan Comparison", card_content, "cmp-card")
-    render_copy_image_component("cmp-card", card_html, height=440)
+    # Header 70px + info 40px + plan header 36px + 6 rows * 28px + total 40px + button 40px
+    render_copy_image_component("cmp-card", card_html, height=400)
 
     img_bytes = generate_rate_card_image(card_content)
     st.download_button(
