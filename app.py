@@ -524,6 +524,12 @@ with tab_lookup:
     if filtered_rates:
         import pandas as pd
 
+        # Show Rate Card button at top if rows were previously selected
+        if st.session_state.get("lu_selected_rates"):
+            num_selected = len(st.session_state["lu_selected_rates"])
+            if st.button(f"📋 Rate Card ({num_selected} selected)", key="lu_rate_card_btn"):
+                show_rate_lookup_card()
+
         # Build dataframe for selection
         display_rates = filtered_rates[:500]
         df_rows = []
@@ -558,16 +564,14 @@ with tab_lookup:
             key="lu_rate_table",
         )
 
-        # Get selected rows
+        # Get selected rows and store for next rerun
         selected_rows = event.selection.rows if event and event.selection else []
 
         if selected_rows:
             selected_rate_data = [display_rates[i] for i in selected_rows if i < len(display_rates)]
             st.session_state["lu_selected_rates"] = selected_rate_data
-
-            # Rate Card button
-            if st.button(f"📋 Rate Card ({len(selected_rows)} selected)", key="lu_rate_card_btn"):
-                show_rate_lookup_card()
+        else:
+            st.session_state["lu_selected_rates"] = []
 
         if len(filtered_rates) > 500:
             st.markdown(
@@ -966,9 +970,8 @@ with tab_premium:
                 f'<tfoot>{bk_foot}</tfoot>'
                 f'</table></div>'
             )
-            st.markdown(breakdown_html, unsafe_allow_html=True)
-
-            # --- Copy Rate Card for Premium ---
+            
+            # --- Copy Rate Card for Premium (at top) ---
             # Build premium card HTML and store for dialog
             prem_card_header = (
                 f'<div style="margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid {GRAY_BORDER};">'
@@ -1035,6 +1038,8 @@ with tab_premium:
 
             if st.button("📋 Rate Card", key="pc_rate_card_btn"):
                 show_premium_card()
+
+            st.markdown(breakdown_html, unsafe_allow_html=True)
 
 
 # ===========================================================================
@@ -1325,9 +1330,8 @@ with tab_compare:
                 f'<tfoot>{cmp_foot}</tfoot>'
                 f'</table></div>'
             )
-            st.markdown(comp_html, unsafe_allow_html=True)
 
-            # --- Copy Rate Card for Compare Plans ---
+            # --- Copy Rate Card for Compare Plans (at top) ---
             # Build comparison card content and store for dialog
             cp_card_header = (
                 f'<div style="margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid {GRAY_BORDER};">'
@@ -1402,6 +1406,8 @@ with tab_compare:
 
             if st.button("📋 Rate Card", key="cp_rate_card_btn"):
                 show_compare_card()
+
+            st.markdown(comp_html, unsafe_allow_html=True)
 
     if not cp_avail_plans:
         st.markdown(
