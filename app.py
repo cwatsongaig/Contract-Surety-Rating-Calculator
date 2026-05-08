@@ -327,82 +327,102 @@ with tab_lookup:
     )
 
     if filtered_rates:
-        # Build rate table HTML
-        header_cells = (
-            f'<th style="text-align:left;padding:0.35rem 0.5rem;font-weight:600;'
-            f'color:{GRAY_700};font-size:0.7rem;white-space:nowrap;">Company</th>'
-            f'<th style="text-align:left;padding:0.35rem 0.5rem;font-weight:600;'
-            f'color:{GRAY_700};font-size:0.7rem;white-space:nowrap;">State</th>'
-            f'<th style="text-align:left;padding:0.35rem 0.5rem;font-weight:600;'
-            f'color:{GRAY_700};font-size:0.7rem;white-space:nowrap;">Class</th>'
-            f'<th style="text-align:left;padding:0.35rem 0.5rem;font-weight:600;'
-            f'color:{GRAY_700};font-size:0.7rem;white-space:nowrap;">Rating Plan</th>'
-        )
-        for sl in SHORT_TIER_LABELS:
-            header_cells += (
-                f'<th style="text-align:right;padding:0.35rem 0.5rem;font-weight:600;'
-                f'color:{GRAY_700};font-size:0.7rem;white-space:nowrap;">{sl}</th>'
-            )
-        header_cells += (
-            f'<th style="text-align:right;padding:0.35rem 0.5rem;font-weight:600;'
-            f'color:{GRAY_700};font-size:0.7rem;white-space:nowrap;">D/C</th>'
-            f'<th style="text-align:left;padding:0.35rem 0.5rem;font-weight:600;'
-            f'color:{GRAY_700};font-size:0.7rem;white-space:nowrap;">Max Term</th>'
-            f'<th style="text-align:left;padding:0.35rem 0.5rem;font-weight:600;'
-            f'color:{GRAY_700};font-size:0.7rem;white-space:nowrap;">Notes</th>'
-        )
+        import pandas as pd
 
-        # Limit display to 500 rows for performance
+        # Build dataframe for selection
         display_rates = filtered_rates[:500]
-        body_rows = ""
+        df_rows = []
         for r in display_rates:
             is_na = all(t is None for t in r["tiers"])
-            opacity = "opacity:0.5;" if is_na else ""
-            row = (
-                f'<td style="padding:0.25rem 0.5rem;white-space:nowrap;{opacity}">'
-                f'{r["company"]}</td>'
-                f'<td style="padding:0.25rem 0.5rem;white-space:nowrap;{opacity}">'
-                f'{r["state"]}</td>'
-                f'<td style="padding:0.25rem 0.5rem;white-space:nowrap;{opacity}">'
-                f'{r["bond_class"]}</td>'
-                f'<td style="padding:0.25rem 0.5rem;white-space:nowrap;font-weight:500;{opacity}">'
-                f'{r["rating_plan"]}</td>'
-            )
-            for j, t in enumerate(r["tiers"]):
+            row_data = {
+                "Company": r["company"],
+                "State": r["state"],
+                "Class": r["bond_class"],
+                "Rating Plan": r["rating_plan"],
+            }
+            for j, sl in enumerate(SHORT_TIER_LABELS):
                 if is_na and j == 0:
-                    val = '<span style="color:#EF4444;">N/A</span>'
+                    row_data[sl] = "N/A"
                 elif is_na:
-                    val = ""
+                    row_data[sl] = ""
                 else:
-                    val = format_rate(t)
-                row += (
-                    f'<td style="padding:0.25rem 0.5rem;text-align:right;'
-                    f'font-family:monospace;white-space:nowrap;{opacity}">{val}</td>'
-                )
-            dc_val = f"{r['debit_credit'] * 100:.0f}%" if r["debit_credit"] is not None else "-"
-            mt_val = r["max_term"] or "-"
-            notes_val = r["notes"] or ""
-            if "SPECIAL PERMISSION" in (notes_val):
-                notes_val = f'<span style="color:#EF4444;font-weight:600;">{notes_val}</span>'
+                    row_data[sl] = format_rate(r["tiers"][j]) if r["tiers"][j] is not None else "N/A"
+            row_data["D/C"] = f"{r['debit_credit'] * 100:.0f}%" if r["debit_credit"] is not None else "-"
+            row_data["Max Term"] = r["max_term"] or "-"
+            df_rows.append(row_data)
 
-            row += (
-                f'<td style="padding:0.25rem 0.5rem;text-align:right;font-family:monospace;'
-                f'white-space:nowrap;">{dc_val}</td>'
-                f'<td style="padding:0.25rem 0.5rem;white-space:nowrap;">{mt_val}</td>'
-                f'<td style="padding:0.25rem 0.5rem;font-size:0.75rem;">{notes_val}</td>'
-            )
-            body_rows += f'<tr style="border-bottom:1px solid {GRAY_100};">{row}</tr>'
+        df = pd.DataFrame(df_rows)
 
-        table_html = (
-            f'<div style="background:white;border:1px solid {GRAY_BORDER};border-radius:6px;'
-            f'overflow:auto;box-shadow:0 1px 2px rgba(0,0,0,0.04);max-height:600px;">'
-            f'<table style="width:100%;border-collapse:collapse;font-size:0.8rem;">'
-            f'<thead><tr style="background:{GRAY_50};border-bottom:1px solid {GRAY_BORDER};'
-            f'position:sticky;top:0;">{header_cells}</tr></thead>'
-            f'<tbody>{body_rows}</tbody>'
-            f'</table></div>'
+        # Use st.dataframe with selection
+        event = st.dataframe(
+            df,
+            use_container_width=True,
+            hide_index=True,
+            on_select="rerun",
+            selection_mode="multi-row",
+            key="lu_rate_table",
         )
-        st.markdown(table_html, unsafe_allow_html=True)
+
+        # Get selected rows
+        selected_rows = event.selection.rows if event and event.selection else []
+
+        if selected_rows:
+            st.markdown(
+                f'<div style="font-size:0.75rem;color:{NAVY};font-weight:600;margin:0.5rem 0 0.25rem 0;">'
+                f'{len(selected_rows)} rate{"s" if len(selected_rows) != 1 else ""} selected</div>',
+                unsafe_allow_html=True,
+            )
+            with st.expander("Copy Rate Card", expanded=True):
+                # Build rate card content from selected rows
+                selected_rate_data = [display_rates[i] for i in selected_rows if i < len(display_rates)]
+
+                card_table_header = (
+                    f'<th style="text-align:left;padding:4px 6px;font-size:11px;font-weight:600;'
+                    f'color:{GRAY_700};">Company</th>'
+                    f'<th style="text-align:left;padding:4px 6px;font-size:11px;font-weight:600;'
+                    f'color:{GRAY_700};">State</th>'
+                    f'<th style="text-align:left;padding:4px 6px;font-size:11px;font-weight:600;'
+                    f'color:{GRAY_700};">Class</th>'
+                    f'<th style="text-align:left;padding:4px 6px;font-size:11px;font-weight:600;'
+                    f'color:{GRAY_700};">Plan</th>'
+                )
+                for tl in TIER_LABELS:
+                    card_table_header += (
+                        f'<th style="text-align:right;padding:4px 6px;font-size:11px;font-weight:600;'
+                        f'color:{GRAY_700};">{tl}</th>'
+                    )
+                card_table_header += (
+                    f'<th style="text-align:right;padding:4px 6px;font-size:11px;font-weight:600;'
+                    f'color:{GRAY_700};">D/C</th>'
+                )
+
+                card_rows = ""
+                for r in selected_rate_data:
+                    row = (
+                        f'<td style="padding:4px 6px;font-size:12px;">{r["company"]}</td>'
+                        f'<td style="padding:4px 6px;font-size:12px;">{r["state"]}</td>'
+                        f'<td style="padding:4px 6px;font-size:12px;">{r["bond_class"]}</td>'
+                        f'<td style="padding:4px 6px;font-size:12px;font-weight:500;">{r["rating_plan"]}</td>'
+                    )
+                    for t in r["tiers"]:
+                        row += (
+                            f'<td style="text-align:right;padding:4px 6px;font-size:12px;'
+                            f'font-family:monospace;">{format_rate(t)}</td>'
+                        )
+                    dc_val = f"{r['debit_credit'] * 100:.0f}%" if r["debit_credit"] is not None else "-"
+                    row += (
+                        f'<td style="text-align:right;padding:4px 6px;font-size:12px;'
+                        f'font-family:monospace;">{dc_val}</td>'
+                    )
+                    card_rows += f'<tr style="border-bottom:1px solid #F3F4F6;">{row}</tr>'
+
+                card_content = (
+                    f'<table style="width:100%;border-collapse:collapse;">'
+                    f'<thead><tr style="border-bottom:2px solid {GRAY_BORDER};">'
+                    f'{card_table_header}</tr></thead>'
+                    f'<tbody>{card_rows}</tbody></table>'
+                )
+                st.markdown(render_rate_card("Rate Card", card_content, "rate-lookup-card"), unsafe_allow_html=True)
 
         if len(filtered_rates) > 500:
             st.markdown(
@@ -412,57 +432,6 @@ with tab_lookup:
                 f'Use filters to narrow results.</div>',
                 unsafe_allow_html=True,
             )
-
-        # --- Copy Rate Card ---
-        with st.expander("Copy Rate Card", expanded=False):
-            # Build a clean rate card for copying
-            card_table_header = (
-                f'<th style="text-align:left;padding:4px 6px;font-size:11px;font-weight:600;'
-                f'color:{GRAY_700};">Company</th>'
-                f'<th style="text-align:left;padding:4px 6px;font-size:11px;font-weight:600;'
-                f'color:{GRAY_700};">State</th>'
-                f'<th style="text-align:left;padding:4px 6px;font-size:11px;font-weight:600;'
-                f'color:{GRAY_700};">Class</th>'
-                f'<th style="text-align:left;padding:4px 6px;font-size:11px;font-weight:600;'
-                f'color:{GRAY_700};">Plan</th>'
-            )
-            for tl in TIER_LABELS:
-                card_table_header += (
-                    f'<th style="text-align:right;padding:4px 6px;font-size:11px;font-weight:600;'
-                    f'color:{GRAY_700};">{tl}</th>'
-                )
-            card_table_header += (
-                f'<th style="text-align:right;padding:4px 6px;font-size:11px;font-weight:600;'
-                f'color:{GRAY_700};">D/C</th>'
-            )
-
-            card_rows = ""
-            for r in display_rates[:20]:  # Limit card to 20 rows
-                row = (
-                    f'<td style="padding:4px 6px;font-size:12px;">{r["company"]}</td>'
-                    f'<td style="padding:4px 6px;font-size:12px;">{r["state"]}</td>'
-                    f'<td style="padding:4px 6px;font-size:12px;">{r["bond_class"]}</td>'
-                    f'<td style="padding:4px 6px;font-size:12px;font-weight:500;">{r["rating_plan"]}</td>'
-                )
-                for t in r["tiers"]:
-                    row += (
-                        f'<td style="text-align:right;padding:4px 6px;font-size:12px;'
-                        f'font-family:monospace;">{format_rate(t)}</td>'
-                    )
-                dc_val = f"{r['debit_credit'] * 100:.0f}%" if r["debit_credit"] is not None else "-"
-                row += (
-                    f'<td style="text-align:right;padding:4px 6px;font-size:12px;'
-                    f'font-family:monospace;">{dc_val}</td>'
-                )
-                card_rows += f'<tr style="border-bottom:1px solid #F3F4F6;">{row}</tr>'
-
-            card_content = (
-                f'<table style="width:100%;border-collapse:collapse;">'
-                f'<thead><tr style="border-bottom:2px solid {GRAY_BORDER};">'
-                f'{card_table_header}</tr></thead>'
-                f'<tbody>{card_rows}</tbody></table>'
-            )
-            st.markdown(render_rate_card("Rate Card", card_content, "rate-lookup-card"), unsafe_allow_html=True)
 
     else:
         st.markdown(
