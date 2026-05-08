@@ -87,16 +87,13 @@ def render_rate_card(title: str, content_html: str, card_id: str = "rate-card"):
 
     card_html = (
         f'<div id="{card_id}" style="background:white;border:1px solid #D1D5DB;'
-        f'border-radius:8px;padding:16px 20px;font-family:-apple-system,BlinkMacSystemFont,'
+        f'border-radius:8px;padding:14px 16px;font-family:-apple-system,BlinkMacSystemFont,'
         f'Segoe UI,Roboto,sans-serif;font-size:13px;line-height:1.5;color:#1F2937;'
-        f'box-shadow:0 1px 3px rgba(0,0,0,0.08);max-width:560px;">'
-        f'<div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;'
-        f'padding-bottom:10px;border-bottom:2px solid {NAVY};">'
+        f'box-shadow:0 1px 3px rgba(0,0,0,0.08);">'
+        f'<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;'
+        f'padding-bottom:8px;border-bottom:2px solid {NAVY};">'
         f'{logo_img}'
-        f'<div>'
-        f'<div style="font-size:14px;font-weight:700;color:{NAVY};">Contract Rate Information</div>'
-        f'<div style="font-size:11px;color:{GRAY_400};margin-top:1px;">Great American Insurance Group</div>'
-        f'</div>'
+        f'<div style="font-size:13px;font-weight:700;color:{NAVY};">Contract Rate Information</div>'
         f'</div>'
         f'{content_html}'
         f'</div>'
@@ -423,7 +420,7 @@ def format_percent(value):
 # ===========================================================================
 # Dialog functions for Rate Card popups
 # ===========================================================================
-@st.dialog("Rate Card", width="large")
+@st.dialog("Rate Card", width="small")
 def show_rate_lookup_card():
     """Show rate card dialog for selected rates."""
     selected = st.session_state.get("lu_selected_rates", [])
@@ -435,41 +432,39 @@ def show_rate_lookup_card():
     card_blocks = ""
     for idx, r in enumerate(selected):
         if idx > 0:
-            card_blocks += f'<div style="border-top:1px solid {GRAY_BORDER};margin:14px 0;"></div>'
+            card_blocks += f'<div style="border-top:1px solid {GRAY_BORDER};margin:10px 0;"></div>'
 
         # Rate header
         card_blocks += (
-            f'<div style="margin-bottom:8px;">'
-            f'<div style="font-size:14px;font-weight:700;color:{NAVY};margin-bottom:2px;">'
+            f'<div style="margin-bottom:6px;">'
+            f'<div style="font-size:13px;font-weight:700;color:{NAVY};margin-bottom:1px;">'
             f'{r["company"]}</div>'
-            f'<div style="font-size:13px;color:{GRAY_700};">'
-            f'{r["state"]} &nbsp;&bull;&nbsp; {r["bond_class"]} &nbsp;&bull;&nbsp; '
+            f'<div style="font-size:12px;color:{GRAY_700};">'
+            f'{r["state"]} &bull; {r["bond_class"]} &bull; '
             f'<span style="font-weight:600;">{r["rating_plan"]}</span></div>'
             f'</div>'
         )
 
         # Rate tiers
-        card_blocks += '<div style="margin-left:2px;">'
         for j, sl in enumerate(SHORT_TIER_LABELS):
             val = format_rate(r["tiers"][j]) if r["tiers"][j] is not None else "N/A"
             bg = "#F9FAFB" if j % 2 == 0 else "white"
             card_blocks += (
-                f'<div style="display:flex;justify-content:space-between;padding:5px 8px;'
-                f'background:{bg};border-radius:3px;">'
-                f'<span style="color:{GRAY_500};font-size:13px;">{sl}</span>'
-                f'<span style="font-size:13px;font-weight:600;">{val}</span>'
+                f'<div style="display:flex;justify-content:space-between;padding:3px 6px;'
+                f'background:{bg};border-radius:2px;">'
+                f'<span style="color:{GRAY_500};font-size:12px;">{sl}</span>'
+                f'<span style="font-size:12px;font-weight:600;">{val}</span>'
                 f'</div>'
             )
         # D/C line
         dc_val = f"{r['debit_credit'] * 100:.0f}%" if r["debit_credit"] is not None else "-"
         card_blocks += (
-            f'<div style="display:flex;justify-content:space-between;padding:5px 8px;'
-            f'margin-top:2px;border-top:1px solid {GRAY_BORDER};">'
-            f'<span style="color:{GRAY_500};font-size:13px;">Debit/Credit</span>'
-            f'<span style="font-size:13px;font-weight:600;">{dc_val}</span>'
+            f'<div style="display:flex;justify-content:space-between;padding:3px 6px;'
+            f'margin-top:1px;border-top:1px solid {GRAY_BORDER};">'
+            f'<span style="color:{GRAY_500};font-size:12px;">Debit/Credit</span>'
+            f'<span style="font-size:12px;font-weight:600;">{dc_val}</span>'
             f'</div>'
         )
-        card_blocks += '</div>'
 
     # Render card - calculate tight height based on content
     card_html = render_rate_card("Rate Card", card_blocks, "lu-card")
@@ -488,7 +483,7 @@ def show_rate_lookup_card():
     )
 
 
-@st.dialog("Premium Rate Card", width="large")
+@st.dialog("Premium Rate Card", width="small")
 def show_premium_card():
     """Show rate card dialog for premium breakdown."""
     data = st.session_state.get("premium_card_data", {})
@@ -510,7 +505,7 @@ def show_premium_card():
     )
 
 
-@st.dialog("Plan Comparison Rate Card", width="large")
+@st.dialog("Plan Comparison Rate Card", width="small")
 def show_compare_card():
     """Show rate card dialog for plan comparison."""
     data = st.session_state.get("compare_card_data", {})
