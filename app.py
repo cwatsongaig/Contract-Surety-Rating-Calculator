@@ -1286,8 +1286,16 @@ with tab_compare:
             for idx, plan in enumerate(cp_avail_plans):
                 with plan_cols[idx % len(plan_cols)]:
                     is_selected = plan in st.session_state["cp_selected_plans"]
+                    if is_selected:
+                        # Highlighted selected state
+                        st.markdown(
+                            f'<div style="background:{NAVY};color:white;text-align:center;'
+                            f'padding:7px 12px;border-radius:6px;font-size:0.8rem;'
+                            f'font-weight:600;cursor:pointer;">{plan}</div>',
+                            unsafe_allow_html=True,
+                        )
                     if st.button(
-                        plan,
+                        plan if not is_selected else " ",
                         key=f"cp_plan_btn_{plan}",
                         use_container_width=True,
                     ):
@@ -1296,13 +1304,6 @@ with tab_compare:
                         elif len(st.session_state["cp_selected_plans"]) < 4:
                             st.session_state["cp_selected_plans"].append(plan)
                         _rerun()
-                    # Show highlight bar under selected buttons
-                    if is_selected:
-                        st.markdown(
-                            f'<div style="height:3px;background:{NAVY};border-radius:2px;'
-                            f'margin-top:-8px;margin-bottom:4px;"></div>',
-                            unsafe_allow_html=True,
-                        )
 
         # Clean up selections that are no longer available
         selected_plans = [p for p in st.session_state["cp_selected_plans"] if p in cp_avail_plans]
