@@ -1,0 +1,1042 @@
+"""
+Contract Surety Bond Rate Table - Streamlit App
+
+4-tab layout: Rate Lookup, Premium Calculator, Commission, Compare Plans.
+Styled to match the Commercial Surety Rating Calculator (navy/red palette,
+compact card layout, custom HTML tables).
+
+Designed to be uploaded to GitHub and shared with other users.
+"""
+
+import streamlit as st
+
+from rate_data import (
+    RATES,
+    VARIOUS_RATES,
+    COMMISSION_SCALES,
+    RATE_CODES,
+    COMPANIES,
+    STATES,
+    CLASSES,
+    RATING_PLANS,
+    TIER_LABELS,
+    SHORT_TIER_LABELS,
+)
+from rate_engine import (
+    calculate_premium,
+    find_maintenance_rate,
+    apply_additional_maint_years,
+)
+
+# ---------------------------------------------------------------------------
+# Page config
+# ---------------------------------------------------------------------------
+st.set_page_config(
+    page_title="Contract Surety Rate Table",
+    page_icon="CS",
+    layout="wide",
+    initial_sidebar_state="collapsed",
+)
+
+# ---------------------------------------------------------------------------
+# Design tokens (matches commercial app)
+# ---------------------------------------------------------------------------
+NAVY = "#1B2A4A"
+RED = "#C41230"
+GRAY_BG = "#F8F9FA"
+GRAY_BORDER = "#E5E7EB"
+GRAY_100 = "#F3F4F6"
+GRAY_50 = "#F9FAFB"
+GRAY_400 = "#9CA3AF"
+GRAY_500 = "#6B7280"
+GRAY_700 = "#374151"
+GREEN = "#059669"
+AMBER_BG = "#FFFBEB"
+AMBER_BORDER = "#FDE68A"
+AMBER_TEXT = "#92400E"
+
+# ---------------------------------------------------------------------------
+# Compact CSS
+# ---------------------------------------------------------------------------
+st.markdown("""
+<style>
+    /* Hide Streamlit chrome */
+    #MainMenu {visibility: hidden;}
+    header[data-testid="stHeader"] {display: none;}
+    footer {visibility: hidden;}
+    div[data-testid="stDecoration"] {display: none;}
+    section[data-testid="stSidebar"] {display: none;}
+
+    .stApp { background-color: #F8F9FA; }
+
+    /* Tight block container */
+    .block-container {
+        padding-top: 0 !important;
+        padding-bottom: 0 !important;
+        max-width: 100% !important;
+    }
+
+    /* Reduce vertical gap between elements */
+    div[data-testid="stVerticalBlock"] > div {
+        gap: 0.25rem !important;
+    }
+
+    /* Input focus rings */
+    .stSelectbox > div > div:focus-within,
+    .stNumberInput > div > div:focus-within {
+        border-color: #C41230 !important;
+        box-shadow: 0 0 0 2px rgba(196, 18, 48, 0.15) !important;
+    }
+
+    /* Number inputs: monospace */
+    .stNumberInput input {
+        font-family: 'SF Mono', 'Cascadia Code', 'Consolas', monospace !important;
+    }
+
+    /* Compact metric cards */
+    div[data-testid="stMetric"] {
+        background-color: white;
+        border: 1px solid #E5E7EB;
+        border-radius: 6px;
+        padding: 0.5rem 0.75rem;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+    }
+    div[data-testid="stMetric"] label {
+        font-size: 0.65rem !important;
+        font-weight: 600 !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.05em !important;
+        color: #6B7280 !important;
+    }
+    div[data-testid="stMetric"] div[data-testid="stMetricValue"] {
+        font-family: 'SF Mono', 'Cascadia Code', 'Consolas', monospace !important;
+        font-size: 1.1rem !important;
+        font-weight: 700 !important;
+        color: #1B2A4A !important;
+    }
+
+    /* Compact labels */
+    .stSelectbox label, .stNumberInput label, .stCheckbox label, .stTextInput label {
+        font-size: 0.7rem !important;
+        font-weight: 600 !important;
+        color: #6B7280 !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.03em !important;
+        margin-bottom: 0 !important;
+    }
+
+    /* Tighter dividers */
+    hr {
+        margin-top: 0.35rem !important;
+        margin-bottom: 0.35rem !important;
+    }
+
+    /* Compact expander */
+    div[data-testid="stExpander"] {
+        border: 1px solid #E5E7EB !important;
+        border-radius: 8px !important;
+        background: white !important;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.04) !important;
+    }
+    div[data-testid="stExpander"] summary {
+        font-size: 0.8rem !important;
+        font-weight: 600 !important;
+        color: #1B2A4A !important;
+        padding: 0.5rem 0.75rem !important;
+    }
+
+    /* Tab styling */
+    button[data-baseweb="tab"] {
+        font-size: 0.8rem !important;
+        font-weight: 600 !important;
+    }
+</style>
+""", unsafe_allow_html=True)
+
+# ---------------------------------------------------------------------------
+# Header bar
+# ---------------------------------------------------------------------------
+num_rates = len(RATES)
+num_companies = len(COMPANIES)
+num_states = len(STATES)
+num_classes = len(CLASSES)
+
+header_html = (
+    f'<div style="background:white;border-bottom:1px solid {GRAY_BORDER};'
+    f'margin:-1rem -1rem 0 -1rem;width:calc(100% + 2rem);">'
+    f'<div style="display:flex;align-items:center;justify-content:space-between;'
+    f'height:44px;padding:0 1.5rem;">'
+    f'<div style="display:flex;align-items:center;gap:10px;">'
+    f'<div style="width:28px;height:28px;background:{NAVY};border-radius:5px;'
+    f'display:flex;align-items:center;justify-content:center;color:white;'
+    f'font-weight:700;font-size:12px;">CS</div>'
+    f'<span style="color:#D1D5DB;font-size:0.8rem;font-weight:300;">|</span>'
+    f'<span style="font-size:0.8rem;font-weight:600;color:{NAVY};'
+    f'letter-spacing:0.025em;">Contract Surety Rate Table</span>'
+    f'</div>'
+    f'<span style="font-size:0.7rem;color:{GRAY_400};">'
+    f'{num_rates} rates &middot; {num_companies} companies &middot; '
+    f'{num_states} states &middot; {num_classes} classes</span>'
+    f'</div>'
+    f'<div style="height:2px;background:{RED};"></div>'
+    f'</div>'
+)
+st.markdown(header_html, unsafe_allow_html=True)
+st.markdown("<div style='height:8px;'></div>", unsafe_allow_html=True)
+
+
+# ===========================================================================
+# Helper: cascading filter logic
+# ===========================================================================
+def get_filtered_options(rates, company, state, bond_class, rating_plan):
+    """Return available options for each filter given current selections."""
+    def matches(r, exclude_field):
+        return (
+            (exclude_field == "company" or not company or r["company"] == company)
+            and (exclude_field == "state" or not state or r["state"] == state)
+            and (exclude_field == "class" or not bond_class or r["bond_class"] == bond_class)
+            and (exclude_field == "plan" or not rating_plan or r["rating_plan"] == rating_plan)
+        )
+
+    companies = sorted(set(r["company"] for r in rates if matches(r, "company")))
+    states = sorted(set(r["state"] for r in rates if matches(r, "state")))
+    classes = sorted(set(r["bond_class"] for r in rates if matches(r, "class")))
+    plans = sorted(set(r["rating_plan"] for r in rates if matches(r, "plan")))
+    return companies, states, classes, plans
+
+
+def format_currency(value):
+    """Format a number as currency."""
+    return f"${value:,.2f}"
+
+
+def format_rate(value):
+    """Format a rate value."""
+    if value is None:
+        return "N/A"
+    return f"{value:.2f}"
+
+
+def format_percent(value):
+    """Format a decimal as percentage."""
+    return f"{value * 100:.1f}%"
+
+
+# ===========================================================================
+# Tabs
+# ===========================================================================
+tab_lookup, tab_premium, tab_commission, tab_compare = st.tabs(
+    ["Rate Lookup", "Premium Calculator", "Commission", "Compare Plans"]
+)
+
+
+# ===========================================================================
+# TAB 1: Rate Lookup
+# ===========================================================================
+with tab_lookup:
+    st.markdown(
+        f'<div style="font-size:0.8rem;font-weight:600;color:{NAVY};'
+        f'margin-bottom:0.15rem;padding-left:0.25rem;">Filter Rates</div>',
+        unsafe_allow_html=True,
+    )
+
+    lc1, lc2, lc3, lc4 = st.columns(4)
+    with lc1:
+        lu_company = st.selectbox(
+            "Company", options=[""] + COMPANIES,
+            format_func=lambda x: "All Companies" if x == "" else x,
+            key="lu_company",
+        )
+    with lc2:
+        lu_state = st.selectbox(
+            "State", options=[""] + STATES,
+            format_func=lambda x: "All States" if x == "" else x,
+            key="lu_state",
+        )
+    with lc3:
+        lu_class = st.selectbox(
+            "Class", options=[""] + CLASSES,
+            format_func=lambda x: "All Classes" if x == "" else x,
+            key="lu_class",
+        )
+    with lc4:
+        lu_plan = st.selectbox(
+            "Rating Plan", options=[""] + RATING_PLANS,
+            format_func=lambda x: "All Plans" if x == "" else x,
+            key="lu_plan",
+        )
+
+    # Filter rates
+    filtered_rates = [
+        r for r in RATES
+        if (not lu_company or r["company"] == lu_company)
+        and (not lu_state or r["state"] == lu_state)
+        and (not lu_class or r["bond_class"] == lu_class)
+        and (not lu_plan or r["rating_plan"] == lu_plan)
+    ]
+
+    st.markdown(
+        f'<div style="font-size:0.7rem;color:{GRAY_400};padding-left:0.25rem;'
+        f'margin-bottom:0.25rem;">{len(filtered_rates)} rate'
+        f'{"s" if len(filtered_rates) != 1 else ""}</div>',
+        unsafe_allow_html=True,
+    )
+
+    if filtered_rates:
+        # Build rate table HTML
+        header_cells = (
+            f'<th style="text-align:left;padding:0.35rem 0.5rem;font-weight:600;'
+            f'color:{GRAY_700};font-size:0.7rem;white-space:nowrap;">Company</th>'
+            f'<th style="text-align:left;padding:0.35rem 0.5rem;font-weight:600;'
+            f'color:{GRAY_700};font-size:0.7rem;white-space:nowrap;">State</th>'
+            f'<th style="text-align:left;padding:0.35rem 0.5rem;font-weight:600;'
+            f'color:{GRAY_700};font-size:0.7rem;white-space:nowrap;">Class</th>'
+            f'<th style="text-align:left;padding:0.35rem 0.5rem;font-weight:600;'
+            f'color:{GRAY_700};font-size:0.7rem;white-space:nowrap;">Rating Plan</th>'
+        )
+        for sl in SHORT_TIER_LABELS:
+            header_cells += (
+                f'<th style="text-align:right;padding:0.35rem 0.5rem;font-weight:600;'
+                f'color:{GRAY_700};font-size:0.7rem;white-space:nowrap;">{sl}</th>'
+            )
+        header_cells += (
+            f'<th style="text-align:right;padding:0.35rem 0.5rem;font-weight:600;'
+            f'color:{GRAY_700};font-size:0.7rem;white-space:nowrap;">D/C</th>'
+            f'<th style="text-align:left;padding:0.35rem 0.5rem;font-weight:600;'
+            f'color:{GRAY_700};font-size:0.7rem;white-space:nowrap;">Max Term</th>'
+            f'<th style="text-align:left;padding:0.35rem 0.5rem;font-weight:600;'
+            f'color:{GRAY_700};font-size:0.7rem;white-space:nowrap;">Notes</th>'
+        )
+
+        # Limit display to 500 rows for performance
+        display_rates = filtered_rates[:500]
+        body_rows = ""
+        for r in display_rates:
+            is_na = all(t is None for t in r["tiers"])
+            opacity = "opacity:0.5;" if is_na else ""
+            row = (
+                f'<td style="padding:0.25rem 0.5rem;white-space:nowrap;{opacity}">'
+                f'{r["company"]}</td>'
+                f'<td style="padding:0.25rem 0.5rem;white-space:nowrap;{opacity}">'
+                f'{r["state"]}</td>'
+                f'<td style="padding:0.25rem 0.5rem;white-space:nowrap;{opacity}">'
+                f'{r["bond_class"]}</td>'
+                f'<td style="padding:0.25rem 0.5rem;white-space:nowrap;font-weight:500;{opacity}">'
+                f'{r["rating_plan"]}</td>'
+            )
+            for j, t in enumerate(r["tiers"]):
+                if is_na and j == 0:
+                    val = '<span style="color:#EF4444;">N/A</span>'
+                elif is_na:
+                    val = ""
+                else:
+                    val = format_rate(t)
+                row += (
+                    f'<td style="padding:0.25rem 0.5rem;text-align:right;'
+                    f'font-family:monospace;white-space:nowrap;{opacity}">{val}</td>'
+                )
+            dc_val = f"{r['debit_credit'] * 100:.0f}%" if r["debit_credit"] is not None else "-"
+            mt_val = r["max_term"] or "-"
+            notes_val = r["notes"] or ""
+            if "SPECIAL PERMISSION" in (notes_val):
+                notes_val = f'<span style="color:#EF4444;font-weight:600;">{notes_val}</span>'
+
+            row += (
+                f'<td style="padding:0.25rem 0.5rem;text-align:right;font-family:monospace;'
+                f'white-space:nowrap;">{dc_val}</td>'
+                f'<td style="padding:0.25rem 0.5rem;white-space:nowrap;">{mt_val}</td>'
+                f'<td style="padding:0.25rem 0.5rem;font-size:0.75rem;">{notes_val}</td>'
+            )
+            body_rows += f'<tr style="border-bottom:1px solid {GRAY_100};">{row}</tr>'
+
+        table_html = (
+            f'<div style="background:white;border:1px solid {GRAY_BORDER};border-radius:6px;'
+            f'overflow:auto;box-shadow:0 1px 2px rgba(0,0,0,0.04);max-height:600px;">'
+            f'<table style="width:100%;border-collapse:collapse;font-size:0.8rem;">'
+            f'<thead><tr style="background:{GRAY_50};border-bottom:1px solid {GRAY_BORDER};'
+            f'position:sticky;top:0;">{header_cells}</tr></thead>'
+            f'<tbody>{body_rows}</tbody>'
+            f'</table></div>'
+        )
+        st.html(table_html)
+
+        if len(filtered_rates) > 500:
+            st.markdown(
+                f'<div style="font-size:0.7rem;color:{AMBER_TEXT};background:{AMBER_BG};'
+                f'border:1px solid {AMBER_BORDER};border-radius:6px;padding:0.4rem 0.6rem;'
+                f'margin-top:0.5rem;">Showing first 500 of {len(filtered_rates)} rates. '
+                f'Use filters to narrow results.</div>',
+                unsafe_allow_html=True,
+            )
+    else:
+        st.markdown(
+            f'<div style="text-align:center;padding:3rem;color:{GRAY_400};">'
+            f'No rates match your filters. Try adjusting your selections above.</div>',
+            unsafe_allow_html=True,
+        )
+
+
+# ===========================================================================
+# TAB 2: Premium Calculator
+# ===========================================================================
+with tab_premium:
+    # --- Rate Selection ---
+    st.markdown(
+        f'<div style="font-size:0.8rem;font-weight:600;color:{NAVY};'
+        f'margin-bottom:0.15rem;padding-left:0.25rem;">Select Rate</div>',
+        unsafe_allow_html=True,
+    )
+
+    pc1, pc2, pc3, pc4 = st.columns(4)
+    with pc1:
+        pc_company = st.selectbox(
+            "Company", options=COMPANIES,
+            index=COMPANIES.index("Great American Insurance") if "Great American Insurance" in COMPANIES else 0,
+            key="pc_company",
+        )
+    with pc2:
+        # Get available states for selected company
+        pc_avail_states = sorted(set(
+            r["state"] for r in RATES if r["company"] == pc_company
+        ))
+        pc_state = st.selectbox("State", options=pc_avail_states, key="pc_state")
+
+    with pc3:
+        pc_avail_classes = sorted(set(
+            r["bond_class"] for r in RATES
+            if r["company"] == pc_company and r["state"] == pc_state
+        ))
+        pc_class = st.selectbox("Class", options=pc_avail_classes, key="pc_class")
+
+    with pc4:
+        pc_avail_plans = sorted(set(
+            r["rating_plan"] for r in RATES
+            if r["company"] == pc_company and r["state"] == pc_state
+            and r["bond_class"] == pc_class
+        ))
+        pc_plan = st.selectbox("Rating Plan", options=pc_avail_plans, key="pc_plan")
+
+    # Find matching rate
+    matching_rate = None
+    for r in RATES:
+        if (r["company"] == pc_company and r["state"] == pc_state
+                and r["bond_class"] == pc_class and r["rating_plan"] == pc_plan):
+            matching_rate = r
+            break
+
+    rate_is_na = matching_rate is not None and all(t is None for t in matching_rate["tiers"])
+
+    if rate_is_na:
+        st.markdown(
+            f'<div style="background:#FEF2F2;border:1px solid #FECACA;padding:0.75rem;'
+            f'border-radius:6px;color:#991B1B;font-size:0.8rem;font-weight:500;">'
+            f'This rating plan is <strong>Not Available</strong> for the selected combination.</div>',
+            unsafe_allow_html=True,
+        )
+
+    if matching_rate and not rate_is_na:
+        # --- Contract Details (single compact row) ---
+        cd1, cd2, cd3, cd4, cd5, cd6 = st.columns([1.2, 1, 1, 0.8, 0.8, 0.8])
+        with cd1:
+            # Bond amount with comma formatting
+            def _format_contract_amount():
+                raw = st.session_state.get("pc_contract_amt", "")
+                digits = raw.replace("$", "").replace(",", "").replace(" ", "").strip()
+                cleaned = ""
+                dot_seen = False
+                for ch in digits:
+                    if ch.isdigit():
+                        cleaned += ch
+                    elif ch == "." and not dot_seen:
+                        cleaned += ch
+                        dot_seen = True
+                if not cleaned or cleaned == ".":
+                    return
+                try:
+                    val = float(cleaned)
+                except ValueError:
+                    return
+                val = min(val, 999_999_999.0)
+                if "." in cleaned:
+                    int_part, dec_part = cleaned.split(".", 1)
+                    int_val = int(int_part) if int_part else 0
+                    st.session_state["pc_contract_amt"] = f"{int_val:,}.{dec_part}"
+                else:
+                    st.session_state["pc_contract_amt"] = f"{int(val):,}"
+
+            contract_amt_raw = st.text_input(
+                "Contract Amount",
+                placeholder="10,000,000",
+                help="Enter contract amount - commas added automatically",
+                key="pc_contract_amt",
+                on_change=_format_contract_amount,
+            )
+            _cleaned = contract_amt_raw.replace("$", "").replace(",", "").replace(" ", "").strip()
+            try:
+                contract_amount = max(0.0, min(float(_cleaned), 999_999_999.0))
+            except (ValueError, TypeError):
+                contract_amount = 0.0
+
+        with cd2:
+            max_dc = matching_rate.get("debit_credit")
+            if max_dc is not None:
+                max_dc_int = int(abs(max_dc) * 100)
+                dc_label = f"D/C % (+/-{max_dc_int}%)"
+            else:
+                dc_label = "D/C %"
+                max_dc_int = 0
+            dc_input = st.number_input(
+                dc_label,
+                min_value=-max_dc_int if max_dc is not None else 0,
+                max_value=max_dc_int if max_dc is not None else 0,
+                value=0,
+                step=1,
+                key="pc_dc",
+                disabled=max_dc is None,
+            )
+            debit_credit_pct = dc_input / 100.0
+
+        with cd3:
+            scale_names = [s["name"] for s in COMMISSION_SCALES]
+            default_idx = scale_names.index("GAIG Standard") if "GAIG Standard" in scale_names else 0
+            scale_name = st.selectbox(
+                "Commission Scale", options=scale_names, index=default_idx, key="pc_scale",
+            )
+            selected_scale = next(s for s in COMMISSION_SCALES if s["name"] == scale_name)
+
+        with cd4:
+            time_surcharge_months = st.number_input(
+                "Time Surchg. Mo.",
+                min_value=0, max_value=60, value=0, step=1, key="pc_ts_months",
+            )
+
+        with cd5:
+            if pc_class != "Maintenance":
+                include_maint = st.checkbox(
+                    "Incl. Maint.", value=False, key="pc_include_maint",
+                )
+            else:
+                include_maint = False
+
+        with cd6:
+            if include_maint or pc_class == "Maintenance":
+                additional_maint_years = st.number_input(
+                    "Addl. Maint. Yrs",
+                    min_value=0, max_value=20, value=0, step=1, key="pc_maint_years",
+                )
+            else:
+                additional_maint_years = 0
+
+        # --- Calculate ---
+        if contract_amount > 0:
+            # Main rate (apply maint years if class is Maintenance)
+            calc_rate = matching_rate
+            if pc_class == "Maintenance":
+                calc_rate = apply_additional_maint_years(matching_rate, additional_maint_years)
+
+            result = calculate_premium(
+                calc_rate, contract_amount, debit_credit_pct,
+                selected_scale, time_surcharge_months,
+            )
+
+            # Maintenance calculation
+            maint_result = None
+            if include_maint and pc_class != "Maintenance":
+                maint_rate = find_maintenance_rate(RATES, pc_company, pc_state, pc_plan)
+                if maint_rate and not all(t is None for t in maint_rate["tiers"]):
+                    adj_maint = apply_additional_maint_years(maint_rate, additional_maint_years)
+                    maint_result = calculate_premium(adj_maint, contract_amount, debit_credit_pct)
+
+            total_premium = result.total_premium + (maint_result.total_premium if maint_result else 0.0)
+
+            # --- Warnings (above breakdown so they're visible) ---
+            if include_maint and not maint_result and pc_class != "Maintenance":
+                st.markdown(
+                    f'<div style="background:{AMBER_BG};border:1px solid {AMBER_BORDER};'
+                    f'border-radius:6px;padding:0.4rem 0.6rem;margin:0.25rem 0;'
+                    f'font-size:0.7rem;color:{AMBER_TEXT};font-weight:500;">'
+                    f'No maintenance rate available for {pc_company} / {pc_state} / {pc_plan}. '
+                    f'Try a different Rating Plan (Bureau/Standard/Manual, Reduced, or Merit '
+                    f'have broader coverage).</div>',
+                    unsafe_allow_html=True,
+                )
+
+            if matching_rate.get("notes") and "SPECIAL PERMISSION" in matching_rate["notes"]:
+                st.markdown(
+                    f'<div style="background:{AMBER_BG};border:1px solid {AMBER_BORDER};'
+                    f'border-radius:6px;padding:0.4rem 0.6rem;margin:0.25rem 0;'
+                    f'font-size:0.7rem;color:{AMBER_TEXT};font-weight:500;">'
+                    f'{matching_rate["notes"]}</div>',
+                    unsafe_allow_html=True,
+                )
+
+            # --- Compact KPI bar + Breakdown Table ---
+            has_time_surcharge = any(t.time_surcharge > 0 for t in result.tiers)
+            has_maint = maint_result is not None
+
+            # Header
+            bk_header = (
+                f'<th style="text-align:left;padding:0.35rem 0.5rem;font-weight:600;'
+                f'color:{GRAY_700};font-size:0.7rem;">Contract Range</th>'
+                f'<th style="text-align:right;padding:0.35rem 0.5rem;font-weight:600;'
+                f'color:{GRAY_700};font-size:0.7rem;">Amount</th>'
+                f'<th style="text-align:right;padding:0.35rem 0.5rem;font-weight:600;'
+                f'color:{GRAY_700};font-size:0.7rem;">Price/M</th>'
+                f'<th style="text-align:right;padding:0.35rem 0.5rem;font-weight:600;'
+                f'color:{GRAY_700};font-size:0.7rem;">Debit/Credit</th>'
+                f'<th style="text-align:right;padding:0.35rem 0.5rem;font-weight:600;'
+                f'color:{GRAY_700};font-size:0.7rem;">Adj. Price/M</th>'
+                f'<th style="text-align:right;padding:0.35rem 0.5rem;font-weight:600;'
+                f'color:{GRAY_700};font-size:0.7rem;">Contract Premium</th>'
+            )
+            if has_time_surcharge:
+                bk_header += (
+                    f'<th style="text-align:right;padding:0.35rem 0.5rem;font-weight:600;'
+                    f'color:{GRAY_700};font-size:0.7rem;">Time Surcharge</th>'
+                )
+            if has_maint:
+                bk_header += (
+                    f'<th style="text-align:right;padding:0.35rem 0.5rem;font-weight:600;'
+                    f'color:{GRAY_700};font-size:0.7rem;">Maint. Rate/M</th>'
+                    f'<th style="text-align:right;padding:0.35rem 0.5rem;font-weight:600;'
+                    f'color:{GRAY_700};font-size:0.7rem;">Maint. Premium</th>'
+                )
+            bk_header += (
+                f'<th style="text-align:right;padding:0.35rem 0.5rem;font-weight:600;'
+                f'color:{GRAY_700};font-size:0.7rem;">Comm. %</th>'
+                f'<th style="text-align:right;padding:0.35rem 0.5rem;font-weight:600;'
+                f'color:{GRAY_700};font-size:0.7rem;">Comm. $</th>'
+            )
+
+            # Body rows
+            bk_body = ""
+            for i, tier in enumerate(result.tiers):
+                opacity = "opacity:0.4;" if tier.amount == 0 else ""
+                mt = maint_result.tiers[i] if has_maint else None
+
+                row = (
+                    f'<td style="padding:0.3rem 0.5rem;{opacity}">'
+                    f'<span style="font-weight:500;color:{GRAY_700};margin-right:0.5rem;">'
+                    f'{tier.label}</span>'
+                    f'<span style="color:{GRAY_400};font-size:0.75rem;">'
+                    f'{tier.range_label}</span></td>'
+                    f'<td style="padding:0.3rem 0.5rem;text-align:right;font-family:monospace;'
+                    f'{opacity}">{format_currency(tier.amount)}</td>'
+                    f'<td style="padding:0.3rem 0.5rem;text-align:right;font-family:monospace;'
+                    f'{opacity}">{format_rate(tier.rate_per_m)}</td>'
+                    f'<td style="padding:0.3rem 0.5rem;text-align:right;font-family:monospace;'
+                    f'{opacity}">{format_percent(tier.debit_credit_pct)}</td>'
+                    f'<td style="padding:0.3rem 0.5rem;text-align:right;font-family:monospace;'
+                    f'{opacity}">{format_rate(tier.adj_rate_per_m)}</td>'
+                    f'<td style="padding:0.3rem 0.5rem;text-align:right;font-family:monospace;'
+                    f'font-weight:600;{opacity}">{format_currency(tier.premium)}</td>'
+                )
+                if has_time_surcharge:
+                    row += (
+                        f'<td style="padding:0.3rem 0.5rem;text-align:right;font-family:monospace;'
+                        f'{opacity}">{format_currency(tier.time_surcharge)}</td>'
+                    )
+                if has_maint and mt:
+                    row += (
+                        f'<td style="padding:0.3rem 0.5rem;text-align:right;font-family:monospace;'
+                        f'{opacity}">{format_rate(mt.rate_per_m)}</td>'
+                        f'<td style="padding:0.3rem 0.5rem;text-align:right;font-family:monospace;'
+                        f'font-weight:600;{opacity}">{format_currency(mt.premium)}</td>'
+                    )
+                elif has_maint:
+                    row += (
+                        f'<td style="padding:0.3rem 0.5rem;"></td>'
+                        f'<td style="padding:0.3rem 0.5rem;"></td>'
+                    )
+                row += (
+                    f'<td style="padding:0.3rem 0.5rem;text-align:right;font-family:monospace;'
+                    f'{opacity}">{format_percent(tier.commission_pct)}</td>'
+                    f'<td style="padding:0.3rem 0.5rem;text-align:right;font-family:monospace;'
+                    f'{opacity}">{format_currency(tier.commission_amt)}</td>'
+                )
+                bk_body += f'<tr style="border-bottom:1px solid {GRAY_100};">{row}</tr>'
+
+            # Footer
+            total_ts = sum(t.time_surcharge for t in result.tiers)
+            ts_extra_cols = 1 if has_time_surcharge else 0
+            maint_extra_cols = 2 if has_maint else 0
+
+            if has_maint:
+                # Contract subtotal row
+                bk_foot = (
+                    f'<tr style="background:{GRAY_50};border-top:1px solid {GRAY_BORDER};">'
+                    f'<td style="padding:0.3rem 0.5rem;font-weight:600;" colspan="2">Contract Subtotal</td>'
+                    f'<td colspan="3"></td>'
+                    f'<td style="padding:0.3rem 0.5rem;text-align:right;font-family:monospace;'
+                    f'font-weight:600;color:{NAVY};">'
+                    f'{format_currency(result.total_premium - total_ts)}</td>'
+                )
+                if has_time_surcharge:
+                    bk_foot += (
+                        f'<td style="padding:0.3rem 0.5rem;text-align:right;font-family:monospace;'
+                        f'font-weight:600;color:{NAVY};">{format_currency(total_ts)}</td>'
+                    )
+                bk_foot += f'<td colspan="2"></td>'
+                bk_foot += (
+                    f'<td style="padding:0.3rem 0.5rem;text-align:right;font-family:monospace;'
+                    f'color:{NAVY};">{format_percent(result.blended_commission_pct)}</td>'
+                    f'<td style="padding:0.3rem 0.5rem;text-align:right;font-family:monospace;'
+                    f'color:{NAVY};">{format_currency(result.total_commission)}</td>'
+                    f'</tr>'
+                )
+
+                # Maintenance subtotal row
+                bk_foot += (
+                    f'<tr style="background:{GRAY_50};">'
+                    f'<td style="padding:0.3rem 0.5rem;font-weight:600;" colspan="2">Maintenance Subtotal</td>'
+                    f'<td colspan="{3 + ts_extra_cols}"></td>'
+                    f'<td></td><td></td>'
+                    f'<td style="padding:0.3rem 0.5rem;text-align:right;font-family:monospace;'
+                    f'font-weight:600;color:{NAVY};">'
+                    f'{format_currency(maint_result.total_premium)}</td>'
+                    f'<td colspan="2"></td>'
+                    f'</tr>'
+                )
+
+                # Total row
+                bk_foot += (
+                    f'<tr style="background:rgba(27,42,74,0.05);border-top:2px solid rgba(27,42,74,0.2);">'
+                    f'<td style="padding:0.5rem;font-weight:700;color:{NAVY};" '
+                    f'colspan="{5 + ts_extra_cols}">Total Premium</td>'
+                    f'<td style="padding:0.5rem;text-align:right;font-family:monospace;'
+                    f'font-weight:700;color:{NAVY};font-size:1rem;" colspan="{1 + maint_extra_cols}">'
+                    f'{format_currency(total_premium)}</td>'
+                    f'<td colspan="2"></td>'
+                    f'</tr>'
+                )
+            else:
+                # Simple subtotal row
+                bk_foot = (
+                    f'<tr style="background:{GRAY_50};font-weight:600;border-top:1px solid {GRAY_BORDER};">'
+                    f'<td style="padding:0.5rem;" colspan="2">Subtotal</td>'
+                    f'<td colspan="3"></td>'
+                    f'<td style="padding:0.5rem;text-align:right;font-family:monospace;'
+                    f'color:{NAVY};font-size:1rem;">'
+                    f'{format_currency(result.total_premium - total_ts)}</td>'
+                )
+                if has_time_surcharge:
+                    bk_foot += (
+                        f'<td style="padding:0.5rem;text-align:right;font-family:monospace;'
+                        f'color:{NAVY};font-size:1rem;">{format_currency(total_ts)}</td>'
+                    )
+                bk_foot += (
+                    f'<td style="padding:0.5rem;text-align:right;font-family:monospace;'
+                    f'color:{NAVY};">{format_percent(result.blended_commission_pct)}</td>'
+                    f'<td style="padding:0.5rem;text-align:right;font-family:monospace;'
+                    f'color:{NAVY};">{format_currency(result.total_commission)}</td>'
+                    f'</tr>'
+                )
+
+            # KPI summary bar
+            kpi_parts = f'Contract: {format_currency(result.total_premium)}'
+            if maint_result:
+                kpi_parts += f' + Maint: {format_currency(maint_result.total_premium)}'
+            kpi_total = format_currency(total_premium)
+
+            breakdown_html = (
+                f'<div style="background:white;border:1px solid {GRAY_BORDER};border-radius:6px;'
+                f'overflow:auto;box-shadow:0 1px 2px rgba(0,0,0,0.04);">'
+                f'<div style="background:{GRAY_50};padding:0.35rem 0.5rem;border-bottom:1px solid '
+                f'{GRAY_BORDER};display:flex;justify-content:space-between;align-items:center;">'
+                f'<span style="font-size:0.7rem;font-weight:600;color:{NAVY};">Premium Breakdown</span>'
+                f'<span style="font-size:0.75rem;color:{GRAY_500};">'
+                f'{kpi_parts + " = " if maint_result else ""}'
+                f'<span style="font-weight:700;color:{NAVY};font-size:0.85rem;font-family:monospace;">'
+                f'{kpi_total}</span></span>'
+                f'</div>'
+                f'<table style="width:100%;border-collapse:collapse;font-size:0.8rem;">'
+                f'<thead><tr style="background:{GRAY_50};border-bottom:1px solid {GRAY_BORDER};">'
+                f'{bk_header}</tr></thead>'
+                f'<tbody>{bk_body}</tbody>'
+                f'<tfoot>{bk_foot}</tfoot>'
+                f'</table></div>'
+            )
+            st.html(breakdown_html)
+
+
+# ===========================================================================
+# TAB 3: Commission
+# ===========================================================================
+with tab_commission:
+    st.markdown(
+        f'<div style="font-size:0.8rem;font-weight:600;color:{NAVY};'
+        f'margin-bottom:0.25rem;padding-left:0.25rem;">All Commission Scales</div>',
+        unsafe_allow_html=True,
+    )
+
+    # Header
+    comm_header = (
+        f'<th style="text-align:left;padding:0.35rem 0.5rem;font-weight:600;'
+        f'color:{GRAY_700};font-size:0.7rem;">Scale</th>'
+    )
+    for tl in TIER_LABELS:
+        comm_header += (
+            f'<th style="text-align:right;padding:0.35rem 0.5rem;font-weight:600;'
+            f'color:{GRAY_700};font-size:0.7rem;">{tl}</th>'
+        )
+
+    # Body
+    comm_body = ""
+    for s in COMMISSION_SCALES:
+        row = f'<td style="padding:0.3rem 0.5rem;font-weight:500;">{s["name"]}</td>'
+        for t in s["tiers"]:
+            row += (
+                f'<td style="padding:0.3rem 0.5rem;text-align:right;font-family:monospace;">'
+                f'{format_percent(t)}</td>'
+            )
+        comm_body += f'<tr style="border-bottom:1px solid {GRAY_100};">{row}</tr>'
+
+    comm_html = (
+        f'<div style="background:white;border:1px solid {GRAY_BORDER};border-radius:6px;'
+        f'overflow:hidden;box-shadow:0 1px 2px rgba(0,0,0,0.04);">'
+        f'<table style="width:100%;border-collapse:collapse;font-size:0.8rem;">'
+        f'<thead><tr style="background:{GRAY_50};border-bottom:1px solid {GRAY_BORDER};">'
+        f'{comm_header}</tr></thead>'
+        f'<tbody>{comm_body}</tbody>'
+        f'</table></div>'
+    )
+    st.html(comm_html)
+
+
+# ===========================================================================
+# TAB 4: Compare Plans
+# ===========================================================================
+with tab_compare:
+    st.markdown(
+        f'<div style="font-size:0.8rem;font-weight:600;color:{NAVY};'
+        f'margin-bottom:0.15rem;padding-left:0.25rem;">Compare Plans</div>',
+        unsafe_allow_html=True,
+    )
+
+    cc1, cc2, cc3, cc4 = st.columns(4)
+    with cc1:
+        cp_company = st.selectbox(
+            "Company", options=COMPANIES,
+            index=COMPANIES.index("Great American Insurance") if "Great American Insurance" in COMPANIES else 0,
+            key="cp_company",
+        )
+    with cc2:
+        cp_avail_states = sorted(set(
+            r["state"] for r in RATES if r["company"] == cp_company
+        ))
+        cp_state = st.selectbox("State", options=cp_avail_states, key="cp_state")
+    with cc3:
+        cp_avail_classes = sorted(set(
+            r["bond_class"] for r in RATES
+            if r["company"] == cp_company and r["state"] == cp_state
+        ))
+        cp_class = st.selectbox("Class", options=cp_avail_classes, key="cp_class")
+    with cc4:
+        # Contract amount for comparison
+        def _format_cp_amount():
+            raw = st.session_state.get("cp_contract_amt", "")
+            digits = raw.replace("$", "").replace(",", "").replace(" ", "").strip()
+            cleaned = ""
+            dot_seen = False
+            for ch in digits:
+                if ch.isdigit():
+                    cleaned += ch
+                elif ch == "." and not dot_seen:
+                    cleaned += ch
+                    dot_seen = True
+            if not cleaned or cleaned == ".":
+                return
+            try:
+                val = float(cleaned)
+            except ValueError:
+                return
+            val = min(val, 999_999_999.0)
+            if "." in cleaned:
+                int_part, dec_part = cleaned.split(".", 1)
+                int_val = int(int_part) if int_part else 0
+                st.session_state["cp_contract_amt"] = f"{int_val:,}.{dec_part}"
+            else:
+                st.session_state["cp_contract_amt"] = f"{int(val):,}"
+
+        cp_amt_raw = st.text_input(
+            "Contract Amount",
+            placeholder="10,000,000",
+            key="cp_contract_amt",
+            on_change=_format_cp_amount,
+        )
+        _cp_cleaned = cp_amt_raw.replace("$", "").replace(",", "").replace(" ", "").strip()
+        try:
+            cp_amount = max(0.0, min(float(_cp_cleaned), 999_999_999.0))
+        except (ValueError, TypeError):
+            cp_amount = 0.0
+
+    # Available plans for selected combo
+    cp_avail_rates = [
+        r for r in RATES
+        if r["company"] == cp_company and r["state"] == cp_state
+        and r["bond_class"] == cp_class
+        and not all(t is None for t in r["tiers"])
+    ]
+    cp_avail_plans = sorted(set(r["rating_plan"] for r in cp_avail_rates))
+
+    if cp_avail_plans:
+        st.markdown(
+            f'<div style="font-size:0.7rem;font-weight:600;color:{GRAY_500};'
+            f'text-transform:uppercase;letter-spacing:0.03em;margin:0.5rem 0 0.25rem 0.25rem;">'
+            f'Select Plans to Compare (up to 4)</div>',
+            unsafe_allow_html=True,
+        )
+
+        # Plan toggle buttons using multiselect
+        selected_plans = st.multiselect(
+            "Plans",
+            options=cp_avail_plans,
+            default=[],
+            max_selections=4,
+            key="cp_selected_plans",
+            label_visibility="collapsed",
+        )
+
+        if selected_plans:
+            # Build rates by plan
+            rates_by_plan = {}
+            for r in cp_avail_rates:
+                if r["rating_plan"] in selected_plans:
+                    rates_by_plan[r["rating_plan"]] = r
+
+            # Maintenance rates
+            maint_by_plan = {}
+            if cp_class != "Maintenance":
+                for plan in selected_plans:
+                    maint = find_maintenance_rate(RATES, cp_company, cp_state, plan)
+                    if maint and not all(t is None for t in maint["tiers"]):
+                        maint_by_plan[plan] = maint
+
+            has_maint_compare = len(maint_by_plan) > 0
+
+            # Calculate results
+            results_by_plan = {}
+            maint_results_by_plan = {}
+            if cp_amount > 0:
+                for plan, rate in rates_by_plan.items():
+                    results_by_plan[plan] = calculate_premium(rate, cp_amount, 0.0)
+                for plan, rate in maint_by_plan.items():
+                    maint_results_by_plan[plan] = calculate_premium(rate, cp_amount, 0.0)
+
+            # Build comparison table
+            cmp_header = (
+                f'<th style="text-align:left;padding:0.35rem 0.5rem;font-weight:600;'
+                f'color:{GRAY_700};font-size:0.7rem;">Contract Range</th>'
+            )
+            for plan in selected_plans:
+                cmp_header += (
+                    f'<th style="text-align:right;padding:0.35rem 0.5rem;font-weight:600;'
+                    f'color:{GRAY_700};font-size:0.7rem;">{plan}</th>'
+                )
+
+            cmp_body = ""
+            for i, label in enumerate(TIER_LABELS):
+                rates_for_tier = [
+                    rates_by_plan.get(plan, {}).get("tiers", [None]*6)[i]
+                    for plan in selected_plans
+                ]
+                valid_rates = [r for r in rates_for_tier if r is not None]
+                min_rate = min(valid_rates) if valid_rates else None
+
+                row = (
+                    f'<td style="padding:0.3rem 0.5rem;color:{GRAY_700};font-size:0.75rem;">'
+                    f'{label}</td>'
+                )
+                for rate_val in rates_for_tier:
+                    is_min = (rate_val == min_rate and len(valid_rates) > 1
+                              and rate_val is not None)
+                    color = GREEN if is_min else GRAY_700
+                    weight = "700" if is_min else "400"
+                    row += (
+                        f'<td style="padding:0.3rem 0.5rem;text-align:right;font-family:monospace;'
+                        f'color:{color};font-weight:{weight};">{format_rate(rate_val)}</td>'
+                    )
+                cmp_body += f'<tr style="border-bottom:1px solid {GRAY_100};">{row}</tr>'
+
+            # Premium totals (if contract amount entered)
+            cmp_foot = ""
+            if cp_amount > 0:
+                # Contract premium row
+                row = (
+                    f'<td style="padding:0.3rem 0.5rem;font-weight:600;color:{GRAY_700};">'
+                    f'Contract Premium</td>'
+                )
+                for plan in selected_plans:
+                    r = results_by_plan.get(plan)
+                    row += (
+                        f'<td style="padding:0.3rem 0.5rem;text-align:right;font-family:monospace;'
+                        f'color:{GRAY_700};">{format_currency(r.total_premium) if r else "-"}</td>'
+                    )
+                cmp_foot += (
+                    f'<tr style="background:{GRAY_50};font-weight:600;border-top:1px solid '
+                    f'{GRAY_BORDER};">{row}</tr>'
+                )
+
+                # Maintenance row
+                if has_maint_compare:
+                    row = (
+                        f'<td style="padding:0.3rem 0.5rem;font-weight:600;color:{GRAY_700};">'
+                        f'Maintenance Premium</td>'
+                    )
+                    for plan in selected_plans:
+                        mr = maint_results_by_plan.get(plan)
+                        row += (
+                            f'<td style="padding:0.3rem 0.5rem;text-align:right;font-family:monospace;'
+                            f'color:{GRAY_700};">{format_currency(mr.total_premium) if mr else "-"}</td>'
+                        )
+                    cmp_foot += f'<tr style="background:{GRAY_50};">{row}</tr>'
+
+                # Total row
+                all_totals = []
+                for plan in selected_plans:
+                    cr = results_by_plan.get(plan)
+                    mr = maint_results_by_plan.get(plan)
+                    total = (cr.total_premium if cr else 0) + (mr.total_premium if mr else 0)
+                    all_totals.append(total)
+
+                min_total = min(all_totals) if all_totals else 0
+
+                row = (
+                    f'<td style="padding:0.5rem;font-weight:700;color:{NAVY};">Total Premium</td>'
+                )
+                for idx, plan in enumerate(selected_plans):
+                    total = all_totals[idx]
+                    is_min = (total == min_total
+                              and sum(1 for t in all_totals if t == min_total) < len(selected_plans))
+                    color = "#15803D" if is_min else NAVY
+                    row += (
+                        f'<td style="padding:0.5rem;text-align:right;font-family:monospace;'
+                        f'font-weight:700;color:{color};">'
+                        f'{format_currency(total) if results_by_plan.get(plan) else "-"}</td>'
+                    )
+                cmp_foot += (
+                    f'<tr style="background:rgba(27,42,74,0.05);'
+                    f'border-top:2px solid rgba(27,42,74,0.2);">{row}</tr>'
+                )
+
+            comp_html = (
+                f'<div style="background:white;border:1px solid {GRAY_BORDER};border-radius:6px;'
+                f'overflow:hidden;box-shadow:0 1px 2px rgba(0,0,0,0.04);">'
+                f'<div style="background:{GRAY_50};padding:0.35rem 0.5rem;border-bottom:1px solid '
+                f'{GRAY_BORDER};font-size:0.7rem;font-weight:600;color:{NAVY};">'
+                f'Side-by-Side Comparison</div>'
+                f'<table style="width:100%;border-collapse:collapse;font-size:0.8rem;">'
+                f'<thead><tr style="background:{GRAY_50};border-bottom:1px solid {GRAY_BORDER};">'
+                f'{cmp_header}</tr></thead>'
+                f'<tbody>{cmp_body}</tbody>'
+                f'<tfoot>{cmp_foot}</tfoot>'
+                f'</table></div>'
+            )
+            st.html(comp_html)
+
+    if not cp_avail_plans:
+        st.markdown(
+            f'<div style="text-align:center;padding:3rem;color:{GRAY_400};">'
+            f'No plans available for this combination.</div>',
+            unsafe_allow_html=True,
+        )
