@@ -594,12 +594,6 @@ with tab_lookup:
     )
 
     if filtered_rates:
-        # Show Rate Card button at top if rows were previously selected
-        if st.session_state.get("lu_selected_rates"):
-            num_selected = len(st.session_state["lu_selected_rates"])
-            if st.button(f"📋 Rate Card ({num_selected} selected)", key="lu_rate_card_btn"):
-                show_rate_lookup_card()
-
         display_rates = filtered_rates[:500]
 
         # Build dataframe only if filters changed (use session state to cache)
@@ -639,12 +633,16 @@ with tab_lookup:
             key="lu_rate_table",
         )
 
-        # Get selected rows and store for next rerun
+        # Get selected rows and store immediately
         selected_rows = event.selection.rows if event and event.selection else []
 
         if selected_rows:
             selected_rate_data = [display_rates[i] for i in selected_rows if i < len(display_rates)]
             st.session_state["lu_selected_rates"] = selected_rate_data
+            # Show Rate Card button immediately after selection
+            num_selected = len(selected_rate_data)
+            if st.button(f"📋 Rate Card ({num_selected} selected)", key="lu_rate_card_btn"):
+                show_rate_lookup_card()
         else:
             st.session_state["lu_selected_rates"] = []
 
