@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.1.0 (Build 2) — 2026-05-08
+
+### Features
+- Streamlit app: Copy Rate Card with GAI logo on Rate Lookup, Premium Calculator, and Compare Plans
+- Streamlit app: Compare Plans now uses clickable toggle buttons instead of dropdown multiselect
+- Streamlit app: Rate Lookup defaults company to "Great American Insurance"
+- GAI logo added for branded rate card output
+
 ## v1.0.0 (Build 1) — 2026-05-08
 
 ### Features

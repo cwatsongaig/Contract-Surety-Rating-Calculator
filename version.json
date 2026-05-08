@@ -1,6 +1,6 @@
 {
-  "version": "1.0.0",
-  "build": 1,
+  "version": "1.1.0",
+  "build": 2,
   "date": "2026-05-08",
-  "description": "Initial release with Rate Lookup copy feature, Premium Calculator copy feature, and Plan Comparison copy feature"
+  "description": "Streamlit app updated with Copy Rate Card, GAI logo, clickable plan buttons, and default company"
 }
