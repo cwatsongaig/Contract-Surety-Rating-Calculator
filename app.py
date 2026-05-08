@@ -524,7 +524,7 @@ def show_premium_card():
     )
 
 
-@st.dialog("Plan Comparison Rate Card")
+@st.dialog("Plan Comparison Rate Card", width="large")
 def show_compare_card():
     """Show rate card dialog for plan comparison."""
     data = st.session_state.get("compare_card_data", {})
@@ -1448,7 +1448,7 @@ with tab_compare:
             )
 
             # --- Copy Rate Card for Compare Plans (at top) ---
-            # Build professional vertical comparison card
+            # Build professional comparison card using table layout for proper column alignment
             cp_card = (
                 f'<div style="margin-bottom:8px;">'
                 f'<div style="font-size:15px;font-weight:700;color:{NAVY};margin-bottom:2px;">'
@@ -1461,14 +1461,20 @@ with tab_compare:
                 cp_card += f' &nbsp;&bull;&nbsp; <span style="color:{GRAY_500};">Amount:</span> <b>{format_currency(cp_amount)}</b>'
             cp_card += f'</div></div>'
 
-            # Plan column headers
+            # Use a table for proper column alignment with up to 4 plans
+            plan_headers = ""
+            for plan in selected_plans:
+                plan_headers += (
+                    f'<th style="text-align:right;padding:6px 8px;color:white;'
+                    f'font-size:12px;font-weight:600;white-space:nowrap;">{plan}</th>'
+                )
             cp_card += (
-                f'<div style="display:flex;justify-content:space-between;padding:6px 8px;'
-                f'margin-bottom:3px;background:{NAVY};border-radius:4px;color:white;'
-                f'font-size:12px;font-weight:600;">'
-                f'<span>Contract Range</span>'
-                f'<span>{" &nbsp;&nbsp;&nbsp; ".join(selected_plans)}</span>'
-                f'</div>'
+                f'<table style="width:100%;border-collapse:collapse;margin-top:4px;">'
+                f'<thead><tr style="background:{NAVY};border-radius:4px;">'
+                f'<th style="text-align:left;padding:6px 8px;color:white;'
+                f'font-size:12px;font-weight:600;">Contract Range</th>'
+                f'{plan_headers}'
+                f'</tr></thead><tbody>'
             )
 
             # Tier rows
@@ -1481,37 +1487,51 @@ with tab_compare:
                 min_rate_card = min(valid_rates_card) if valid_rates_card else None
 
                 bg = "#F9FAFB" if i % 2 == 0 else "white"
-                rate_vals_str = ""
+                rate_cells = ""
                 for rate_val in rates_for_tier_card:
                     is_min = (rate_val == min_rate_card and len(valid_rates_card) > 1
                               and rate_val is not None)
                     if is_min:
-                        rate_vals_str += f'<b style="color:#059669;">{format_rate(rate_val)}</b> &nbsp;&nbsp;&nbsp; '
+                        rate_cells += (
+                            f'<td style="text-align:right;padding:4px 8px;font-size:12px;'
+                            f'font-weight:700;color:#059669;">{format_rate(rate_val)}</td>'
+                        )
                     else:
-                        rate_vals_str += f'{format_rate(rate_val)} &nbsp;&nbsp;&nbsp; '
+                        rate_cells += (
+                            f'<td style="text-align:right;padding:4px 8px;font-size:12px;">'
+                            f'{format_rate(rate_val)}</td>'
+                        )
 
                 cp_card += (
-                    f'<div style="display:flex;justify-content:space-between;padding:4px 8px;'
-                    f'background:{bg};border-radius:2px;font-size:12px;">'
-                    f'<span style="color:{GRAY_500};">{sl}</span>'
-                    f'<span>{rate_vals_str.strip()}</span>'
-                    f'</div>'
+                    f'<tr style="background:{bg};">'
+                    f'<td style="padding:4px 8px;font-size:12px;color:{GRAY_500};">{sl}</td>'
+                    f'{rate_cells}'
+                    f'</tr>'
                 )
+
+            cp_card += f'</tbody>'
 
             # Total premium row
             if cp_amount > 0:
-                cp_card += (
-                    f'<div style="display:flex;justify-content:space-between;padding:8px;'
-                    f'margin-top:6px;border-top:2px solid {NAVY};font-size:14px;'
-                    f'font-weight:700;color:{NAVY};">'
-                    f'<span>Total Premium</span><span>'
-                )
+                total_cells = ""
                 for idx_p, plan in enumerate(selected_plans):
                     cr = results_by_plan.get(plan)
                     mr = maint_results_by_plan.get(plan)
                     total = (cr.total_premium if cr else 0) + (mr.total_premium if mr else 0)
-                    cp_card += f'{format_currency(total) if cr else "-"} &nbsp;&nbsp;&nbsp; '
-                cp_card += f'</span></div>'
+                    total_cells += (
+                        f'<td style="text-align:right;padding:8px;font-size:14px;'
+                        f'font-weight:700;color:{NAVY};">'
+                        f'{format_currency(total) if cr else "-"}</td>'
+                    )
+                cp_card += (
+                    f'<tfoot><tr style="border-top:2px solid {NAVY};">'
+                    f'<td style="padding:8px;font-size:14px;font-weight:700;color:{NAVY};">'
+                    f'Total Premium</td>'
+                    f'{total_cells}'
+                    f'</tr></tfoot>'
+                )
+
+            cp_card += f'</table>'
 
             st.session_state["compare_card_data"] = {"html": cp_card}
 
