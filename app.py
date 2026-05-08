@@ -600,13 +600,6 @@ with tab_lookup:
         and (not lu_plan or r["rating_plan"] == lu_plan)
     ]
 
-    # Rate Card button always visible above the count
-    selected_rate_data = st.session_state.get("lu_selected_rates", [])
-    if selected_rate_data:
-        num_selected = len(selected_rate_data)
-        if st.button(f"📋 Rate Card ({num_selected} selected)", key="lu_rate_card_btn"):
-            show_rate_lookup_card()
-
     st.markdown(
         f'<div style="font-size:0.8rem;color:{GRAY_400};padding-left:0.25rem;'
         f'margin-bottom:0.25rem;">{len(filtered_rates)} rate'
@@ -660,6 +653,10 @@ with tab_lookup:
         if selected_rows:
             selected_rate_data = [display_rates[i] for i in selected_rows if i < len(display_rates)]
             st.session_state["lu_selected_rates"] = selected_rate_data
+            # Show Rate Card button immediately on first selection
+            num_selected = len(selected_rate_data)
+            if st.button(f"📋 Rate Card ({num_selected} selected)", key="lu_rate_card_btn"):
+                show_rate_lookup_card()
         else:
             st.session_state["lu_selected_rates"] = []
 
