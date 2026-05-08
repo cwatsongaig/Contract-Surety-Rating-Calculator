@@ -637,6 +637,15 @@ with tab_lookup:
 
         df = st.session_state["_lu_df"]
 
+        # Get selected rows from previous interaction
+        prev_selected = st.session_state.get("lu_selected_rates", [])
+
+        # Show Rate Card button above the table (like Compare Plans)
+        if prev_selected:
+            num_selected = len(prev_selected)
+            if st.button(f"📋 Rate Card ({num_selected} selected)", key="lu_rate_card_btn"):
+                show_rate_lookup_card()
+
         # Use st.dataframe with selection
         event = st.dataframe(
             df,
@@ -653,10 +662,6 @@ with tab_lookup:
         if selected_rows:
             selected_rate_data = [display_rates[i] for i in selected_rows if i < len(display_rates)]
             st.session_state["lu_selected_rates"] = selected_rate_data
-            # Show Rate Card button immediately after selection
-            num_selected = len(selected_rate_data)
-            if st.button(f"📋 Rate Card ({num_selected} selected)", key="lu_rate_card_btn"):
-                show_rate_lookup_card()
         else:
             st.session_state["lu_selected_rates"] = []
 
