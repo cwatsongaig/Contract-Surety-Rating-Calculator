@@ -82,16 +82,16 @@ def render_rate_card(title: str, content_html: str, card_id: str = "rate-card"):
     if GAI_LOGO_B64:
         logo_img = (
             f'<img src="data:image/png;base64,{GAI_LOGO_B64}" '
-            f'style="height:28px;object-fit:contain;" />'
+            f'style="height:22px;object-fit:contain;" />'
         )
 
     card_html = (
         f'<div id="{card_id}" style="background:white;border:1px solid {GRAY_BORDER};'
-        f'border-radius:6px;padding:10px 12px;margin:0.25rem 0;font-size:11px;">'
-        f'<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;'
-        f'padding-bottom:6px;border-bottom:1px solid {GRAY_BORDER};">'
+        f'border-radius:4px;padding:6px 8px;margin:0;font-size:10px;line-height:1.3;">'
+        f'<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;'
+        f'padding-bottom:3px;border-bottom:1px solid {GRAY_BORDER};">'
         f'{logo_img}'
-        f'<span style="font-size:10px;color:{GRAY_500};font-weight:500;">'
+        f'<span style="font-size:9px;color:{GRAY_500};font-weight:500;">'
         f'Contract Rate Information</span>'
         f'</div>'
         f'{content_html}'
@@ -111,9 +111,9 @@ def render_copy_image_component(card_id: str, card_html: str, height: int = 80):
         <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
         <style>
             body {{ margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, sans-serif; }}
-            .btn-row {{ display: flex; gap: 8px; margin-bottom: 8px; }}
+            .btn-row {{ display: flex; gap: 6px; margin-bottom: 4px; }}
             .copy-btn, .status {{
-                padding: 6px 14px; border-radius: 6px; font-size: 12px; font-weight: 600;
+                padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: 600;
                 cursor: pointer; border: none; color: white; background: {NAVY};
             }}
             .copy-btn:hover {{ opacity: 0.9; }}
@@ -462,7 +462,7 @@ def show_rate_lookup_card():
     # Show the branded card with Copy as Image button
     card_html = render_rate_card("Rate Card", card_content, "lu-card")
     num_rows = len(selected)
-    card_height = 80 + (num_rows * 22) + 60  # header + rows + button area
+    card_height = 60 + (num_rows * 18) + 40  # header + rows + button area
     render_copy_image_component("lu-card", card_html, height=card_height)
 
     # Download as image (secondary option)
@@ -485,7 +485,7 @@ def show_premium_card():
 
     card_content = data.get("html", "")
     card_html = render_rate_card("Premium Rate Card", card_content, "prem-card")
-    render_copy_image_component("prem-card", card_html, height=400)
+    render_copy_image_component("prem-card", card_html, height=300)
 
     img_bytes = generate_rate_card_image(card_content)
     st.download_button(
@@ -506,7 +506,7 @@ def show_compare_card():
 
     card_content = data.get("html", "")
     card_html = render_rate_card("Plan Comparison", card_content, "cmp-card")
-    render_copy_image_component("cmp-card", card_html, height=350)
+    render_copy_image_component("cmp-card", card_html, height=280)
 
     img_bytes = generate_rate_card_image(card_content)
     st.download_button(
@@ -585,29 +585,34 @@ with tab_lookup:
             if st.button(f"📋 Rate Card ({num_selected} selected)", key="lu_rate_card_btn"):
                 show_rate_lookup_card()
 
-        # Build dataframe for selection
         display_rates = filtered_rates[:500]
-        df_rows = []
-        for r in display_rates:
-            is_na = all(t is None for t in r["tiers"])
-            row_data = {
-                "Company": r["company"],
-                "State": r["state"],
-                "Class": r["bond_class"],
-                "Rating Plan": r["rating_plan"],
-            }
-            for j, sl in enumerate(SHORT_TIER_LABELS):
-                if is_na and j == 0:
-                    row_data[sl] = "N/A"
-                elif is_na:
-                    row_data[sl] = ""
-                else:
-                    row_data[sl] = format_rate(r["tiers"][j]) if r["tiers"][j] is not None else "N/A"
-            row_data["D/C"] = f"{r['debit_credit'] * 100:.0f}%" if r["debit_credit"] is not None else "-"
-            row_data["Max Term"] = r["max_term"] or "-"
-            df_rows.append(row_data)
 
-        df = pd.DataFrame(df_rows)
+        # Build dataframe only if filters changed (use session state to cache)
+        filter_key = (lu_company, lu_state, lu_class, lu_plan)
+        if st.session_state.get("_lu_filter_key") != filter_key:
+            df_rows = []
+            for r in display_rates:
+                is_na = all(t is None for t in r["tiers"])
+                row_data = {
+                    "Company": r["company"],
+                    "State": r["state"],
+                    "Class": r["bond_class"],
+                    "Rating Plan": r["rating_plan"],
+                }
+                for j, sl in enumerate(SHORT_TIER_LABELS):
+                    if is_na and j == 0:
+                        row_data[sl] = "N/A"
+                    elif is_na:
+                        row_data[sl] = ""
+                    else:
+                        row_data[sl] = format_rate(r["tiers"][j]) if r["tiers"][j] is not None else "N/A"
+                row_data["D/C"] = f"{r['debit_credit'] * 100:.0f}%" if r["debit_credit"] is not None else "-"
+                row_data["Max Term"] = r["max_term"] or "-"
+                df_rows.append(row_data)
+            st.session_state["_lu_df"] = pd.DataFrame(df_rows)
+            st.session_state["_lu_filter_key"] = filter_key
+
+        df = st.session_state["_lu_df"]
 
         # Use st.dataframe with selection
         event = st.dataframe(
