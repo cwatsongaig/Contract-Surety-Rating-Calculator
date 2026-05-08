@@ -89,7 +89,7 @@ def render_rate_card(title: str, content_html: str, card_id: str = "rate-card"):
         f'<div id="{card_id}" style="background:white;border:1px solid #D1D5DB;'
         f'border-radius:8px;padding:10px 14px;font-family:-apple-system,BlinkMacSystemFont,'
         f'Segoe UI,Roboto,sans-serif;font-size:13px;line-height:1.4;color:#1F2937;'
-        f'box-shadow:0 1px 3px rgba(0,0,0,0.08);display:inline-block;width:100%;">'
+        f'box-shadow:0 1px 3px rgba(0,0,0,0.08);box-sizing:border-box;width:100%;">'
         f'<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;'
         f'padding-bottom:6px;border-bottom:2px solid {NAVY};">'
         f'{logo_img}'
@@ -111,7 +111,8 @@ def render_copy_image_component(card_id: str, card_html: str, height: int = 80):
     <head>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
         <style>
-            html, body {{ margin: 0; padding: 0; overflow: visible; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }}
+            html, body {{ margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; box-sizing: border-box; }}
+            *, *::before, *::after {{ box-sizing: border-box; }}
             .btn-row {{ display: flex; gap: 10px; margin-bottom: 8px; }}
             .copy-btn {{
                 padding: 6px 14px; border-radius: 6px; font-size: 13px; font-weight: 600;
@@ -136,25 +137,29 @@ def render_copy_image_component(card_id: str, card_html: str, height: int = 80):
             </div>
         </div>
         <script>
-            // Auto-resize iframe to fit content - multiple attempts for reliability
+            // Auto-resize iframe to fit content
             function resizeFrame() {{
-                var wrapper = document.getElementById("wrapper-{card_id}");
-                if (wrapper && window.frameElement) {{
-                    var h = wrapper.scrollHeight + 10;
-                    window.frameElement.style.height = h + "px";
-                }}
+                try {{
+                    var wrapper = document.getElementById("wrapper-{card_id}");
+                    if (wrapper) {{
+                        var h = wrapper.scrollHeight + 16;
+                        // Try frameElement first (works same-origin)
+                        if (window.frameElement) {{
+                            window.frameElement.style.height = h + "px";
+                        }}
+                        // Also post message to parent for Streamlit Cloud (cross-origin)
+                        window.parent.postMessage({{
+                            type: "streamlit:componentReady",
+                            height: h
+                        }}, "*");
+                    }}
+                }} catch(e) {{}}
             }}
             window.addEventListener("load", resizeFrame);
-            setTimeout(resizeFrame, 50);
-            setTimeout(resizeFrame, 150);
+            setTimeout(resizeFrame, 100);
             setTimeout(resizeFrame, 300);
-            setTimeout(resizeFrame, 600);
-            setTimeout(resizeFrame, 1000);
-
-            // Also observe mutations for dynamic content
-            var observer = new MutationObserver(resizeFrame);
-            var target = document.getElementById("wrapper-{card_id}");
-            if (target) observer.observe(target, {{ childList: true, subtree: true }});
+            setTimeout(resizeFrame, 700);
+            setTimeout(resizeFrame, 1500);
 
             async function copyAsImage() {{
                 var el = document.getElementById("card-container-{card_id}");
@@ -176,7 +181,7 @@ def render_copy_image_component(card_id: str, card_html: str, height: int = 80):
     </body>
     </html>
     '''
-    components.html(copy_component_html, height=height, scrolling=False)
+    components.html(copy_component_html, height=height, scrolling=True)
 
 
 def generate_rate_card_image(content_html: str) -> bytes:
@@ -430,7 +435,7 @@ def format_percent(value):
 # ===========================================================================
 # Dialog functions for Rate Card popups
 # ===========================================================================
-@st.dialog("Rate Card", width="large")
+@st.dialog("Rate Card")
 def show_rate_lookup_card():
     """Show rate card dialog for selected rates."""
     selected = st.session_state.get("lu_selected_rates", [])
@@ -483,8 +488,8 @@ def show_rate_lookup_card():
     # Render card - calculate tight height based on content
     card_html = render_rate_card("Rate Card", card_blocks, "lu-card")
     num_rows = len(selected)
-    # Logo header ~70px + per rate block ~(header 40px + 7 tier rows * 26px + separator 14px) + button 40px
-    card_height = 70 + (num_rows * (40 + 7 * 26 + 14)) + 40
+    # Logo header ~70px + per rate block ~(header 50px + 7 tier rows * 24px + D/C 24px + separator 12px) + button row 36px + padding
+    card_height = 80 + (num_rows * (50 + 7 * 24 + 24 + 12)) + 36
     render_copy_image_component("lu-card", card_html, height=card_height)
 
     # Download as image (secondary option)
@@ -497,7 +502,7 @@ def show_rate_lookup_card():
     )
 
 
-@st.dialog("Premium Rate Card", width="small")
+@st.dialog("Premium Rate Card")
 def show_premium_card():
     """Show rate card dialog for premium breakdown."""
     data = st.session_state.get("premium_card_data", {})
@@ -507,8 +512,8 @@ def show_premium_card():
 
     card_content = data.get("html", "")
     card_html = render_rate_card("Premium Rate Card", card_content, "prem-card")
-    # Header 70px + info 50px + table header 30px + ~6 rows * 28px + totals 80px + button 40px
-    render_copy_image_component("prem-card", card_html, height=440)
+    # Header 80px + info lines 60px + table header 28px + 6 rows * 28px + totals 80px + button 36px + padding
+    render_copy_image_component("prem-card", card_html, height=460)
 
     img_bytes = generate_rate_card_image(card_content)
     st.download_button(
@@ -519,7 +524,7 @@ def show_premium_card():
     )
 
 
-@st.dialog("Plan Comparison Rate Card", width="small")
+@st.dialog("Plan Comparison Rate Card")
 def show_compare_card():
     """Show rate card dialog for plan comparison."""
     data = st.session_state.get("compare_card_data", {})
@@ -529,8 +534,8 @@ def show_compare_card():
 
     card_content = data.get("html", "")
     card_html = render_rate_card("Plan Comparison", card_content, "cmp-card")
-    # Header 70px + info 40px + plan header 36px + 6 rows * 28px + total 40px + button 40px
-    render_copy_image_component("cmp-card", card_html, height=400)
+    # Header 80px + info 40px + plan header 32px + 6 rows * 26px + total 40px + button 36px + padding
+    render_copy_image_component("cmp-card", card_html, height=420)
 
     img_bytes = generate_rate_card_image(card_content)
     st.download_button(
