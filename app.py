@@ -77,21 +77,22 @@ else:
 # Rate Card HTML builder (for copy-to-clipboard feature)
 # ---------------------------------------------------------------------------
 def render_rate_card(title: str, content_html: str, card_id: str = "rate-card"):
-    """Render a compact styled rate card with GAI logo for email use."""
+    """Render a vertical styled rate card with GAI logo for email use."""
     logo_img = ""
     if GAI_LOGO_B64:
         logo_img = (
             f'<img src="data:image/png;base64,{GAI_LOGO_B64}" '
-            f'style="height:22px;object-fit:contain;" />'
+            f'style="height:36px;object-fit:contain;" />'
         )
 
     card_html = (
         f'<div id="{card_id}" style="background:white;border:1px solid {GRAY_BORDER};'
-        f'border-radius:4px;padding:6px 8px;margin:0;font-size:10px;line-height:1.3;">'
-        f'<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;'
-        f'padding-bottom:3px;border-bottom:1px solid {GRAY_BORDER};">'
+        f'border-radius:6px;padding:10px 14px;margin:0;font-size:11px;line-height:1.4;'
+        f'max-width:480px;">'
+        f'<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;'
+        f'padding-bottom:6px;border-bottom:1px solid {GRAY_BORDER};">'
         f'{logo_img}'
-        f'<span style="font-size:9px;color:{GRAY_500};font-weight:500;">'
+        f'<span style="font-size:10px;color:{GRAY_500};font-weight:500;">'
         f'Contract Rate Information</span>'
         f'</div>'
         f'{content_html}'
@@ -411,62 +412,53 @@ def show_rate_lookup_card():
         st.warning("No rates selected.")
         return
 
-    # Build compact card content using short tier labels
-    card_table_header = (
-        f'<th style="text-align:left;padding:2px 4px;font-size:10px;font-weight:600;'
-        f'color:{GRAY_700};">Company</th>'
-        f'<th style="text-align:left;padding:2px 4px;font-size:10px;font-weight:600;'
-        f'color:{GRAY_700};">State</th>'
-        f'<th style="text-align:left;padding:2px 4px;font-size:10px;font-weight:600;'
-        f'color:{GRAY_700};">Class</th>'
-        f'<th style="text-align:left;padding:2px 4px;font-size:10px;font-weight:600;'
-        f'color:{GRAY_700};">Plan</th>'
-    )
-    for sl in SHORT_TIER_LABELS:
-        card_table_header += (
-            f'<th style="text-align:right;padding:2px 4px;font-size:10px;font-weight:600;'
-            f'color:{GRAY_700};">{sl}</th>'
-        )
-    card_table_header += (
-        f'<th style="text-align:right;padding:2px 4px;font-size:10px;font-weight:600;'
-        f'color:{GRAY_700};">D/C</th>'
-    )
+    # Build vertical card content - each rate as its own block
+    card_blocks = ""
+    for idx, r in enumerate(selected):
+        if idx > 0:
+            card_blocks += f'<div style="border-top:1px solid {GRAY_BORDER};margin:8px 0;"></div>'
 
-    card_rows = ""
-    for r in selected:
-        row = (
-            f'<td style="padding:2px 4px;font-size:10px;">{r["company"]}</td>'
-            f'<td style="padding:2px 4px;font-size:10px;">{r["state"]}</td>'
-            f'<td style="padding:2px 4px;font-size:10px;">{r["bond_class"]}</td>'
-            f'<td style="padding:2px 4px;font-size:10px;font-weight:500;">{r["rating_plan"]}</td>'
+        # Rate header: Company | State | Class | Plan
+        card_blocks += (
+            f'<div style="margin-bottom:4px;">'
+            f'<span style="font-weight:600;color:{NAVY};">{r["company"]}</span>'
+            f'<span style="color:{GRAY_400};margin:0 6px;">|</span>'
+            f'<span>{r["state"]}</span>'
+            f'<span style="color:{GRAY_400};margin:0 6px;">|</span>'
+            f'<span>{r["bond_class"]}</span>'
+            f'<span style="color:{GRAY_400};margin:0 6px;">|</span>'
+            f'<span style="font-weight:600;">{r["rating_plan"]}</span>'
+            f'</div>'
         )
-        for t in r["tiers"]:
-            row += (
-                f'<td style="text-align:right;padding:2px 4px;font-size:10px;'
-                f'">{format_rate(t)}</td>'
+
+        # Rate tiers as vertical rows
+        card_blocks += '<div style="margin-left:4px;">'
+        for j, sl in enumerate(SHORT_TIER_LABELS):
+            val = format_rate(r["tiers"][j]) if r["tiers"][j] is not None else "N/A"
+            card_blocks += (
+                f'<div style="display:flex;justify-content:space-between;padding:1px 0;">'
+                f'<span style="color:{GRAY_500};">{sl}</span>'
+                f'<span style="font-weight:500;">{val}</span>'
+                f'</div>'
             )
+        # D/C line
         dc_val = f"{r['debit_credit'] * 100:.0f}%" if r["debit_credit"] is not None else "-"
-        row += (
-            f'<td style="text-align:right;padding:2px 4px;font-size:10px;'
-            f'">{dc_val}</td>'
+        card_blocks += (
+            f'<div style="display:flex;justify-content:space-between;padding:1px 0;">'
+            f'<span style="color:{GRAY_500};">D/C</span>'
+            f'<span style="font-weight:500;">{dc_val}</span>'
+            f'</div>'
         )
-        card_rows += f'<tr style="border-bottom:1px solid #F3F4F6;">{row}</tr>'
-
-    card_content = (
-        f'<table style="width:100%;border-collapse:collapse;">'
-        f'<thead><tr style="border-bottom:1px solid {GRAY_BORDER};">'
-        f'{card_table_header}</tr></thead>'
-        f'<tbody>{card_rows}</tbody></table>'
-    )
+        card_blocks += '</div>'
 
     # Show the branded card with Copy as Image button
-    card_html = render_rate_card("Rate Card", card_content, "lu-card")
+    card_html = render_rate_card("Rate Card", card_blocks, "lu-card")
     num_rows = len(selected)
-    card_height = 60 + (num_rows * 18) + 40  # header + rows + button area
+    card_height = 60 + (num_rows * 170) + 30
     render_copy_image_component("lu-card", card_html, height=card_height)
 
     # Download as image (secondary option)
-    img_bytes = generate_rate_card_image(card_content)
+    img_bytes = generate_rate_card_image(card_blocks)
     st.download_button(
         label="Download as Image",
         data=img_bytes,
@@ -1032,69 +1024,69 @@ with tab_premium:
             )
             
             # --- Copy Rate Card for Premium (at top) ---
-            # Build compact premium card HTML and store for dialog
-            prem_card_header = (
-                f'<div style="margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid {GRAY_BORDER};font-size:10px;">'
-                f'<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:4px;">'
-                f'<div><span style="font-weight:600;color:{GRAY_500};font-size:9px;display:block;">Company</span>{pc_company}</div>'
-                f'<div><span style="font-weight:600;color:{GRAY_500};font-size:9px;display:block;">State</span>{pc_state}</div>'
-                f'<div><span style="font-weight:600;color:{GRAY_500};font-size:9px;display:block;">Class</span>{pc_class}</div>'
-                f'<div><span style="font-weight:600;color:{GRAY_500};font-size:9px;display:block;">Rating Plan</span>{pc_plan}</div>'
+            # Build vertical premium card HTML and store for dialog
+            prem_card = (
+                f'<div style="margin-bottom:6px;">'
+                f'<span style="font-weight:600;color:{NAVY};">{pc_company}</span>'
+                f'<span style="color:{GRAY_400};margin:0 6px;">|</span>'
+                f'<span>{pc_state}</span>'
+                f'<span style="color:{GRAY_400};margin:0 6px;">|</span>'
+                f'<span>{pc_class}</span>'
+                f'<span style="color:{GRAY_400};margin:0 6px;">|</span>'
+                f'<span style="font-weight:600;">{pc_plan}</span>'
                 f'</div>'
-                f'<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:4px;margin-top:4px;">'
-                f'<div><span style="font-weight:600;color:{GRAY_500};font-size:9px;display:block;">Contract Amount</span>{format_currency(contract_amount)}</div>'
-                f'<div><span style="font-weight:600;color:{GRAY_500};font-size:9px;display:block;">Debit/Credit</span>{dc_input}%</div>'
-                f'<div><span style="font-weight:600;color:{GRAY_500};font-size:9px;display:block;">Commission Scale</span>{scale_name}</div>'
-                f'</div></div>'
+                f'<div style="display:flex;gap:12px;margin-bottom:8px;padding-bottom:6px;'
+                f'border-bottom:1px solid {GRAY_BORDER};font-size:10px;color:{GRAY_500};">'
+                f'<span>Amount: <b style="color:{GRAY_700};">{format_currency(contract_amount)}</b></span>'
+                f'<span>D/C: <b style="color:{GRAY_700};">{dc_input}%</b></span>'
+                f'<span>Scale: <b style="color:{GRAY_700};">{scale_name}</b></span>'
+                f'</div>'
             )
 
-            prem_card_table = (
-                f'<table style="width:100%;border-collapse:collapse;font-size:10px;">'
-                f'<thead><tr style="border-bottom:1px solid {GRAY_BORDER};">'
-                f'<th style="text-align:left;padding:2px 4px;font-weight:600;color:{GRAY_700};">Range</th>'
-                f'<th style="text-align:right;padding:2px 4px;font-weight:600;color:{GRAY_700};">Amount</th>'
-                f'<th style="text-align:right;padding:2px 4px;font-weight:600;color:{GRAY_700};">Rate/M</th>'
-                f'<th style="text-align:right;padding:2px 4px;font-weight:600;color:{GRAY_700};">Adj. Rate</th>'
-                f'<th style="text-align:right;padding:2px 4px;font-weight:600;color:{GRAY_700};">Premium</th>'
-                f'<th style="text-align:right;padding:2px 4px;font-weight:600;color:{GRAY_700};">Comm%</th>'
-                f'<th style="text-align:right;padding:2px 4px;font-weight:600;color:{GRAY_700};">Comm$</th>'
-                f'</tr></thead><tbody>'
-            )
+            # Tier breakdown as vertical rows
             for tier in result.tiers:
-                prem_card_table += (
-                    f'<tr style="border-bottom:1px solid #F3F4F6;">'
-                    f'<td style="padding:2px 4px;">{tier.label}</td>'
-                    f'<td style="text-align:right;padding:2px 4px;">{format_currency(tier.amount)}</td>'
-                    f'<td style="text-align:right;padding:2px 4px;">{format_rate(tier.rate_per_m)}</td>'
-                    f'<td style="text-align:right;padding:2px 4px;">{format_rate(tier.adj_rate_per_m)}</td>'
-                    f'<td style="text-align:right;padding:2px 4px;font-weight:600;">{format_currency(tier.premium)}</td>'
-                    f'<td style="text-align:right;padding:2px 4px;">{format_percent(tier.commission_pct)}</td>'
-                    f'<td style="text-align:right;padding:2px 4px;">{format_currency(tier.commission_amt)}</td>'
-                    f'</tr>'
+                if tier.amount == 0:
+                    continue
+                prem_card += (
+                    f'<div style="display:flex;justify-content:space-between;padding:2px 0;'
+                    f'border-bottom:1px solid #F9FAFB;">'
+                    f'<span style="color:{GRAY_500};">{tier.label}</span>'
+                    f'<span>Rate: {format_rate(tier.adj_rate_per_m)} &nbsp; '
+                    f'<b>{format_currency(tier.premium)}</b></span>'
+                    f'</div>'
                 )
-            prem_card_table += (
-                f'</tbody><tfoot>'
-                f'<tr style="border-top:1px solid {NAVY};font-weight:700;">'
-                f'<td style="padding:3px 4px;color:{NAVY};" colspan="4">Total Premium</td>'
-                f'<td style="text-align:right;padding:3px 4px;color:{NAVY};">{format_currency(result.total_premium)}</td>'
-                f'<td style="text-align:right;padding:3px 4px;color:{NAVY};">{format_percent(result.blended_commission_pct)}</td>'
-                f'<td style="text-align:right;padding:3px 4px;color:{NAVY};">{format_currency(result.total_commission)}</td>'
-                f'</tr>'
+
+            # Totals
+            prem_card += (
+                f'<div style="margin-top:6px;padding-top:4px;border-top:1px solid {NAVY};">'
+                f'<div style="display:flex;justify-content:space-between;font-weight:700;color:{NAVY};">'
+                f'<span>Total Premium</span>'
+                f'<span>{format_currency(result.total_premium)}</span>'
+                f'</div>'
             )
             if maint_result:
-                prem_card_table += (
-                    f'<tr style="border-top:1px solid {GRAY_BORDER};">'
-                    f'<td style="padding:2px 4px;font-weight:600;" colspan="4">Maintenance Premium</td>'
-                    f'<td style="text-align:right;padding:2px 4px;font-weight:600;">{format_currency(maint_result.total_premium)}</td>'
-                    f'<td colspan="2"></td></tr>'
-                    f'<tr style="border-top:1px solid {NAVY};font-weight:700;">'
-                    f'<td style="padding:3px 4px;color:{NAVY};" colspan="4">Combined Total</td>'
-                    f'<td style="text-align:right;padding:3px 4px;color:{NAVY};" colspan="3">'
-                    f'{format_currency(total_premium)}</td></tr>'
+                prem_card += (
+                    f'<div style="display:flex;justify-content:space-between;padding-top:2px;">'
+                    f'<span>Maintenance Premium</span>'
+                    f'<span>{format_currency(maint_result.total_premium)}</span>'
+                    f'</div>'
+                    f'<div style="display:flex;justify-content:space-between;font-weight:700;'
+                    f'color:{NAVY};padding-top:2px;border-top:1px solid {NAVY};margin-top:4px;">'
+                    f'<span>Combined Total</span>'
+                    f'<span>{format_currency(total_premium)}</span>'
+                    f'</div>'
                 )
-            prem_card_table += f'</tfoot></table>'
+            # Commission line
+            prem_card += (
+                f'<div style="display:flex;justify-content:space-between;padding-top:2px;'
+                f'font-size:10px;color:{GRAY_500};">'
+                f'<span>Commission ({format_percent(result.blended_commission_pct)})</span>'
+                f'<span>{format_currency(result.total_commission)}</span>'
+                f'</div>'
+            )
+            prem_card += f'</div>'
 
-            st.session_state["premium_card_data"] = {"html": prem_card_header + prem_card_table}
+            st.session_state["premium_card_data"] = {"html": prem_card}
 
             if st.button("📋 Rate Card", key="pc_rate_card_btn"):
                 show_premium_card()
@@ -1392,36 +1384,34 @@ with tab_compare:
             )
 
             # --- Copy Rate Card for Compare Plans (at top) ---
-            # Build compact comparison card content and store for dialog
-            cp_card_header = (
-                f'<div style="margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid {GRAY_BORDER};font-size:10px;">'
-                f'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;">'
-                f'<div><span style="font-weight:600;color:{GRAY_500};font-size:9px;display:block;">Company</span>{cp_company}</div>'
-                f'<div><span style="font-weight:600;color:{GRAY_500};font-size:9px;display:block;">State</span>{cp_state}</div>'
-                f'<div><span style="font-weight:600;color:{GRAY_500};font-size:9px;display:block;">Class</span>{cp_class}</div>'
-                f'</div>'
+            # Build vertical comparison card content and store for dialog
+            cp_card = (
+                f'<div style="margin-bottom:6px;">'
+                f'<span style="font-weight:600;color:{NAVY};">{cp_company}</span>'
+                f'<span style="color:{GRAY_400};margin:0 6px;">|</span>'
+                f'<span>{cp_state}</span>'
+                f'<span style="color:{GRAY_400};margin:0 6px;">|</span>'
+                f'<span>{cp_class}</span>'
             )
             if cp_amount > 0:
-                cp_card_header += (
-                    f'<div style="margin-top:4px;">'
-                    f'<span style="font-weight:600;color:{GRAY_500};font-size:9px;">Contract Amount: </span>'
-                    f'<span style="font-weight:600;">{format_currency(cp_amount)}</span></div>'
+                cp_card += (
+                    f'<span style="color:{GRAY_400};margin:0 6px;">|</span>'
+                    f'<span style="font-size:10px;color:{GRAY_500};">Amount: '
+                    f'<b style="color:{GRAY_700};">{format_currency(cp_amount)}</b></span>'
                 )
-            cp_card_header += f'</div>'
+            cp_card += f'</div>'
 
-            # Build comparison card table
-            cp_card_table = (
-                f'<table style="width:100%;border-collapse:collapse;font-size:10px;">'
-                f'<thead><tr style="border-bottom:1px solid {GRAY_BORDER};">'
-                f'<th style="text-align:left;padding:2px 4px;font-weight:600;color:{GRAY_700};">Range</th>'
+            # Tier breakdown with plan columns - vertical
+            cp_card += (
+                f'<div style="margin-top:6px;">'
+                f'<div style="display:flex;justify-content:space-between;padding:2px 0;'
+                f'border-bottom:1px solid {GRAY_BORDER};font-weight:600;font-size:10px;">'
+                f'<span style="color:{GRAY_700};">Range</span>'
+                f'<span style="color:{GRAY_700};">{" &nbsp;&nbsp; ".join(selected_plans)}</span>'
+                f'</div>'
             )
-            for plan in selected_plans:
-                cp_card_table += (
-                    f'<th style="text-align:right;padding:2px 4px;font-weight:600;color:{GRAY_700};">{plan}</th>'
-                )
-            cp_card_table += f'</tr></thead><tbody>'
 
-            for i, label in enumerate(TIER_LABELS):
+            for i, sl in enumerate(SHORT_TIER_LABELS):
                 rates_for_tier_card = [
                     rates_by_plan.get(plan, {}).get("tiers", [None]*6)[i]
                     for plan in selected_plans
@@ -1429,39 +1419,40 @@ with tab_compare:
                 valid_rates_card = [r for r in rates_for_tier_card if r is not None]
                 min_rate_card = min(valid_rates_card) if valid_rates_card else None
 
-                cp_card_table += f'<tr style="border-bottom:1px solid #F3F4F6;">'
-                cp_card_table += f'<td style="padding:2px 4px;color:#4B5563;">{label}</td>'
+                rate_vals_str = ""
                 for rate_val in rates_for_tier_card:
                     is_min = (rate_val == min_rate_card and len(valid_rates_card) > 1
                               and rate_val is not None)
-                    color = "#16A34A" if is_min else ""
-                    weight = "font-weight:700;" if is_min else ""
-                    color_style = f"color:{color};" if color else ""
-                    cp_card_table += (
-                        f'<td style="text-align:right;padding:2px 4px;'
-                        f'{weight}{color_style}">{format_rate(rate_val)}</td>'
-                    )
-                cp_card_table += f'</tr>'
+                    if is_min:
+                        rate_vals_str += f'<b style="color:#16A34A;">{format_rate(rate_val)}</b> &nbsp;&nbsp; '
+                    else:
+                        rate_vals_str += f'{format_rate(rate_val)} &nbsp;&nbsp; '
 
+                cp_card += (
+                    f'<div style="display:flex;justify-content:space-between;padding:2px 0;'
+                    f'border-bottom:1px solid #F9FAFB;">'
+                    f'<span style="color:{GRAY_500};">{sl}</span>'
+                    f'<span>{rate_vals_str.strip()}</span>'
+                    f'</div>'
+                )
+
+            # Total premium row
             if cp_amount > 0:
-                cp_card_table += (
-                    f'<tr style="border-top:1px solid {NAVY};font-weight:700;">'
-                    f'<td style="padding:3px 4px;color:{NAVY};">Total Premium</td>'
+                cp_card += (
+                    f'<div style="display:flex;justify-content:space-between;padding:4px 0;'
+                    f'margin-top:4px;border-top:1px solid {NAVY};font-weight:700;color:{NAVY};">'
+                    f'<span>Total Premium</span><span>'
                 )
                 for idx_p, plan in enumerate(selected_plans):
                     cr = results_by_plan.get(plan)
                     mr = maint_results_by_plan.get(plan)
                     total = (cr.total_premium if cr else 0) + (mr.total_premium if mr else 0)
-                    cp_card_table += (
-                        f'<td style="text-align:right;padding:3px 4px;'
-                        f'color:{NAVY};">'
-                        f'{format_currency(total) if cr else "-"}</td>'
-                    )
-                cp_card_table += f'</tr>'
+                    cp_card += f'{format_currency(total) if cr else "-"} &nbsp;&nbsp; '
+                cp_card += f'</span></div>'
 
-            cp_card_table += f'</tbody></table>'
+            cp_card += f'</div>'
 
-            st.session_state["compare_card_data"] = {"html": cp_card_header + cp_card_table}
+            st.session_state["compare_card_data"] = {"html": cp_card}
 
             if st.button("📋 Rate Card", key="cp_rate_card_btn"):
                 show_compare_card()
