@@ -1,6 +1,6 @@
 {
-  "version": "2.0.0",
-  "build": 6,
+  "version": "2.1.0",
+  "build": 7,
   "date": "2026-05-08",
-  "description": "Streamlit-only repo with interactive rate selection, Copy Rate Card, and GAI logo"
+  "description": "Rate card enhancements: labeled fields, all tier ranges, tighter spacing, highlighted plan selection"
 }
