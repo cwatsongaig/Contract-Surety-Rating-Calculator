@@ -111,7 +111,7 @@ def render_copy_image_component(card_id: str, card_html: str, height: int = 80):
     <head>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
         <style>
-            html, body {{ margin: 0; padding: 0; overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }}
+            html, body {{ margin: 0; padding: 0; overflow: visible; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }}
             .btn-row {{ display: flex; gap: 10px; margin-bottom: 8px; }}
             .copy-btn {{
                 padding: 6px 14px; border-radius: 6px; font-size: 13px; font-weight: 600;
@@ -430,7 +430,7 @@ def format_percent(value):
 # ===========================================================================
 # Dialog functions for Rate Card popups
 # ===========================================================================
-@st.dialog("Rate Card", width="small")
+@st.dialog("Rate Card", width="large")
 def show_rate_lookup_card():
     """Show rate card dialog for selected rates."""
     selected = st.session_state.get("lu_selected_rates", [])
