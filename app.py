@@ -300,7 +300,7 @@ header_html = (
     f'<span style="font-size:0.8rem;font-weight:600;color:{NAVY};'
     f'letter-spacing:0.025em;">Contract Surety Rate Table</span>'
     f'</div>'
-    f'<span style="font-size:0.7rem;color:{GRAY_400};">'
+    f'<span style="font-size:0.8rem;color:{GRAY_400};">'
     f'{num_rates} rates &middot; {num_companies} companies &middot; '
     f'{num_states} states &middot; {num_classes} classes</span>'
     f'</div>'
@@ -391,12 +391,12 @@ def show_rate_lookup_card():
         for t in r["tiers"]:
             row += (
                 f'<td style="text-align:right;padding:4px 6px;font-size:12px;'
-                f'font-family:monospace;">{format_rate(t)}</td>'
+                f'">{format_rate(t)}</td>'
             )
         dc_val = f"{r['debit_credit'] * 100:.0f}%" if r["debit_credit"] is not None else "-"
         row += (
             f'<td style="text-align:right;padding:4px 6px;font-size:12px;'
-            f'font-family:monospace;">{dc_val}</td>'
+            f'">{dc_val}</td>'
         )
         card_rows += f'<tr style="border-bottom:1px solid #F3F4F6;">{row}</tr>'
 
@@ -515,7 +515,7 @@ with tab_lookup:
     ]
 
     st.markdown(
-        f'<div style="font-size:0.7rem;color:{GRAY_400};padding-left:0.25rem;'
+        f'<div style="font-size:0.8rem;color:{GRAY_400};padding-left:0.25rem;'
         f'margin-bottom:0.25rem;">{len(filtered_rates)} rate'
         f'{"s" if len(filtered_rates) != 1 else ""}</div>',
         unsafe_allow_html=True,
@@ -575,7 +575,7 @@ with tab_lookup:
 
         if len(filtered_rates) > 500:
             st.markdown(
-                f'<div style="font-size:0.7rem;color:{AMBER_TEXT};background:{AMBER_BG};'
+                f'<div style="font-size:0.8rem;color:{AMBER_TEXT};background:{AMBER_BG};'
                 f'border:1px solid {AMBER_BORDER};border-radius:6px;padding:0.4rem 0.6rem;'
                 f'margin-top:0.5rem;">Showing first 500 of {len(filtered_rates)} rates. '
                 f'Use filters to narrow results.</div>',
@@ -768,7 +768,7 @@ with tab_premium:
                 st.markdown(
                     f'<div style="background:{AMBER_BG};border:1px solid {AMBER_BORDER};'
                     f'border-radius:6px;padding:0.4rem 0.6rem;margin:0.25rem 0;'
-                    f'font-size:0.7rem;color:{AMBER_TEXT};font-weight:500;">'
+                    f'font-size:0.8rem;color:{AMBER_TEXT};font-weight:500;">'
                     f'No maintenance rate available for {pc_company} / {pc_state} / {pc_plan}. '
                     f'Try a different Rating Plan (Bureau/Standard/Manual, Reduced, or Merit '
                     f'have broader coverage).</div>',
@@ -779,7 +779,7 @@ with tab_premium:
                 st.markdown(
                     f'<div style="background:{AMBER_BG};border:1px solid {AMBER_BORDER};'
                     f'border-radius:6px;padding:0.4rem 0.6rem;margin:0.25rem 0;'
-                    f'font-size:0.7rem;color:{AMBER_TEXT};font-weight:500;">'
+                    f'font-size:0.8rem;color:{AMBER_TEXT};font-weight:500;">'
                     f'{matching_rate["notes"]}</div>',
                     unsafe_allow_html=True,
                 )
@@ -791,35 +791,35 @@ with tab_premium:
             # Header
             bk_header = (
                 f'<th style="text-align:left;padding:0.35rem 0.5rem;font-weight:600;'
-                f'color:{GRAY_700};font-size:0.7rem;">Contract Range</th>'
+                f'color:{GRAY_700};font-size:0.8rem;">Contract Range</th>'
                 f'<th style="text-align:right;padding:0.35rem 0.5rem;font-weight:600;'
-                f'color:{GRAY_700};font-size:0.7rem;">Amount</th>'
+                f'color:{GRAY_700};font-size:0.8rem;">Amount</th>'
                 f'<th style="text-align:right;padding:0.35rem 0.5rem;font-weight:600;'
-                f'color:{GRAY_700};font-size:0.7rem;">Price/M</th>'
+                f'color:{GRAY_700};font-size:0.8rem;">Price/M</th>'
                 f'<th style="text-align:right;padding:0.35rem 0.5rem;font-weight:600;'
-                f'color:{GRAY_700};font-size:0.7rem;">Debit/Credit</th>'
+                f'color:{GRAY_700};font-size:0.8rem;">Debit/Credit</th>'
                 f'<th style="text-align:right;padding:0.35rem 0.5rem;font-weight:600;'
-                f'color:{GRAY_700};font-size:0.7rem;">Adj. Price/M</th>'
+                f'color:{GRAY_700};font-size:0.8rem;">Adj. Price/M</th>'
                 f'<th style="text-align:right;padding:0.35rem 0.5rem;font-weight:600;'
-                f'color:{GRAY_700};font-size:0.7rem;">Contract Premium</th>'
+                f'color:{GRAY_700};font-size:0.8rem;">Contract Premium</th>'
             )
             if has_time_surcharge:
                 bk_header += (
                     f'<th style="text-align:right;padding:0.35rem 0.5rem;font-weight:600;'
-                    f'color:{GRAY_700};font-size:0.7rem;">Time Surcharge</th>'
+                    f'color:{GRAY_700};font-size:0.8rem;">Time Surcharge</th>'
                 )
             if has_maint:
                 bk_header += (
                     f'<th style="text-align:right;padding:0.35rem 0.5rem;font-weight:600;'
-                    f'color:{GRAY_700};font-size:0.7rem;">Maint. Rate/M</th>'
+                    f'color:{GRAY_700};font-size:0.8rem;">Maint. Rate/M</th>'
                     f'<th style="text-align:right;padding:0.35rem 0.5rem;font-weight:600;'
-                    f'color:{GRAY_700};font-size:0.7rem;">Maint. Premium</th>'
+                    f'color:{GRAY_700};font-size:0.8rem;">Maint. Premium</th>'
                 )
             bk_header += (
                 f'<th style="text-align:right;padding:0.35rem 0.5rem;font-weight:600;'
-                f'color:{GRAY_700};font-size:0.7rem;">Comm. %</th>'
+                f'color:{GRAY_700};font-size:0.8rem;">Comm. %</th>'
                 f'<th style="text-align:right;padding:0.35rem 0.5rem;font-weight:600;'
-                f'color:{GRAY_700};font-size:0.7rem;">Comm. $</th>'
+                f'color:{GRAY_700};font-size:0.8rem;">Comm. $</th>'
             )
 
             # Body rows
@@ -832,29 +832,29 @@ with tab_premium:
                     f'<td style="padding:0.3rem 0.5rem;{opacity}">'
                     f'<span style="font-weight:500;color:{GRAY_700};margin-right:0.5rem;">'
                     f'{tier.label}</span>'
-                    f'<span style="color:{GRAY_400};font-size:0.75rem;">'
+                    f'<span style="color:{GRAY_400};font-size:0.8rem;">'
                     f'{tier.range_label}</span></td>'
-                    f'<td style="padding:0.3rem 0.5rem;text-align:right;font-family:monospace;'
+                    f'<td style="padding:0.3rem 0.5rem;text-align:right;'
                     f'{opacity}">{format_currency(tier.amount)}</td>'
-                    f'<td style="padding:0.3rem 0.5rem;text-align:right;font-family:monospace;'
+                    f'<td style="padding:0.3rem 0.5rem;text-align:right;'
                     f'{opacity}">{format_rate(tier.rate_per_m)}</td>'
-                    f'<td style="padding:0.3rem 0.5rem;text-align:right;font-family:monospace;'
+                    f'<td style="padding:0.3rem 0.5rem;text-align:right;'
                     f'{opacity}">{format_percent(tier.debit_credit_pct)}</td>'
-                    f'<td style="padding:0.3rem 0.5rem;text-align:right;font-family:monospace;'
+                    f'<td style="padding:0.3rem 0.5rem;text-align:right;'
                     f'{opacity}">{format_rate(tier.adj_rate_per_m)}</td>'
-                    f'<td style="padding:0.3rem 0.5rem;text-align:right;font-family:monospace;'
+                    f'<td style="padding:0.3rem 0.5rem;text-align:right;'
                     f'font-weight:600;{opacity}">{format_currency(tier.premium)}</td>'
                 )
                 if has_time_surcharge:
                     row += (
-                        f'<td style="padding:0.3rem 0.5rem;text-align:right;font-family:monospace;'
+                        f'<td style="padding:0.3rem 0.5rem;text-align:right;'
                         f'{opacity}">{format_currency(tier.time_surcharge)}</td>'
                     )
                 if has_maint and mt:
                     row += (
-                        f'<td style="padding:0.3rem 0.5rem;text-align:right;font-family:monospace;'
+                        f'<td style="padding:0.3rem 0.5rem;text-align:right;'
                         f'{opacity}">{format_rate(mt.rate_per_m)}</td>'
-                        f'<td style="padding:0.3rem 0.5rem;text-align:right;font-family:monospace;'
+                        f'<td style="padding:0.3rem 0.5rem;text-align:right;'
                         f'font-weight:600;{opacity}">{format_currency(mt.premium)}</td>'
                     )
                 elif has_maint:
@@ -863,9 +863,9 @@ with tab_premium:
                         f'<td style="padding:0.3rem 0.5rem;"></td>'
                     )
                 row += (
-                    f'<td style="padding:0.3rem 0.5rem;text-align:right;font-family:monospace;'
+                    f'<td style="padding:0.3rem 0.5rem;text-align:right;'
                     f'{opacity}">{format_percent(tier.commission_pct)}</td>'
-                    f'<td style="padding:0.3rem 0.5rem;text-align:right;font-family:monospace;'
+                    f'<td style="padding:0.3rem 0.5rem;text-align:right;'
                     f'{opacity}">{format_currency(tier.commission_amt)}</td>'
                 )
                 bk_body += f'<tr style="border-bottom:1px solid {GRAY_100};">{row}</tr>'
@@ -881,20 +881,20 @@ with tab_premium:
                     f'<tr style="background:{GRAY_50};border-top:1px solid {GRAY_BORDER};">'
                     f'<td style="padding:0.3rem 0.5rem;font-weight:600;" colspan="2">Contract Subtotal</td>'
                     f'<td colspan="3"></td>'
-                    f'<td style="padding:0.3rem 0.5rem;text-align:right;font-family:monospace;'
+                    f'<td style="padding:0.3rem 0.5rem;text-align:right;'
                     f'font-weight:600;color:{NAVY};">'
                     f'{format_currency(result.total_premium - total_ts)}</td>'
                 )
                 if has_time_surcharge:
                     bk_foot += (
-                        f'<td style="padding:0.3rem 0.5rem;text-align:right;font-family:monospace;'
+                        f'<td style="padding:0.3rem 0.5rem;text-align:right;'
                         f'font-weight:600;color:{NAVY};">{format_currency(total_ts)}</td>'
                     )
                 bk_foot += f'<td colspan="2"></td>'
                 bk_foot += (
-                    f'<td style="padding:0.3rem 0.5rem;text-align:right;font-family:monospace;'
+                    f'<td style="padding:0.3rem 0.5rem;text-align:right;'
                     f'color:{NAVY};">{format_percent(result.blended_commission_pct)}</td>'
-                    f'<td style="padding:0.3rem 0.5rem;text-align:right;font-family:monospace;'
+                    f'<td style="padding:0.3rem 0.5rem;text-align:right;'
                     f'color:{NAVY};">{format_currency(result.total_commission)}</td>'
                     f'</tr>'
                 )
@@ -905,7 +905,7 @@ with tab_premium:
                     f'<td style="padding:0.3rem 0.5rem;font-weight:600;" colspan="2">Maintenance Subtotal</td>'
                     f'<td colspan="{3 + ts_extra_cols}"></td>'
                     f'<td></td><td></td>'
-                    f'<td style="padding:0.3rem 0.5rem;text-align:right;font-family:monospace;'
+                    f'<td style="padding:0.3rem 0.5rem;text-align:right;'
                     f'font-weight:600;color:{NAVY};">'
                     f'{format_currency(maint_result.total_premium)}</td>'
                     f'<td colspan="2"></td>'
@@ -917,7 +917,7 @@ with tab_premium:
                     f'<tr style="background:rgba(27,42,74,0.05);border-top:2px solid rgba(27,42,74,0.2);">'
                     f'<td style="padding:0.5rem;font-weight:700;color:{NAVY};" '
                     f'colspan="{5 + ts_extra_cols}">Total Premium</td>'
-                    f'<td style="padding:0.5rem;text-align:right;font-family:monospace;'
+                    f'<td style="padding:0.5rem;text-align:right;'
                     f'font-weight:700;color:{NAVY};font-size:1rem;" colspan="{1 + maint_extra_cols}">'
                     f'{format_currency(total_premium)}</td>'
                     f'<td colspan="2"></td>'
@@ -929,19 +929,19 @@ with tab_premium:
                     f'<tr style="background:{GRAY_50};font-weight:600;border-top:1px solid {GRAY_BORDER};">'
                     f'<td style="padding:0.5rem;" colspan="2">Subtotal</td>'
                     f'<td colspan="3"></td>'
-                    f'<td style="padding:0.5rem;text-align:right;font-family:monospace;'
+                    f'<td style="padding:0.5rem;text-align:right;'
                     f'color:{NAVY};font-size:1rem;">'
                     f'{format_currency(result.total_premium - total_ts)}</td>'
                 )
                 if has_time_surcharge:
                     bk_foot += (
-                        f'<td style="padding:0.5rem;text-align:right;font-family:monospace;'
+                        f'<td style="padding:0.5rem;text-align:right;'
                         f'color:{NAVY};font-size:1rem;">{format_currency(total_ts)}</td>'
                     )
                 bk_foot += (
-                    f'<td style="padding:0.5rem;text-align:right;font-family:monospace;'
+                    f'<td style="padding:0.5rem;text-align:right;'
                     f'color:{NAVY};">{format_percent(result.blended_commission_pct)}</td>'
-                    f'<td style="padding:0.5rem;text-align:right;font-family:monospace;'
+                    f'<td style="padding:0.5rem;text-align:right;'
                     f'color:{NAVY};">{format_currency(result.total_commission)}</td>'
                     f'</tr>'
                 )
@@ -957,10 +957,10 @@ with tab_premium:
                 f'overflow:auto;box-shadow:0 1px 2px rgba(0,0,0,0.04);">'
                 f'<div style="background:{GRAY_50};padding:0.35rem 0.5rem;border-bottom:1px solid '
                 f'{GRAY_BORDER};display:flex;justify-content:space-between;align-items:center;">'
-                f'<span style="font-size:0.7rem;font-weight:600;color:{NAVY};">Premium Breakdown</span>'
-                f'<span style="font-size:0.75rem;color:{GRAY_500};">'
+                f'<span style="font-size:0.8rem;font-weight:600;color:{NAVY};">Premium Breakdown</span>'
+                f'<span style="font-size:0.8rem;color:{GRAY_500};">'
                 f'{kpi_parts + " = " if maint_result else ""}'
-                f'<span style="font-weight:700;color:{NAVY};font-size:0.85rem;font-family:monospace;">'
+                f'<span style="font-weight:700;color:{NAVY};font-size:0.8rem;">'
                 f'{kpi_total}</span></span>'
                 f'</div>'
                 f'<table style="width:100%;border-collapse:collapse;font-size:0.8rem;">'
@@ -1004,32 +1004,32 @@ with tab_premium:
                 prem_card_table += (
                     f'<tr style="border-bottom:1px solid #F3F4F6;">'
                     f'<td style="padding:4px 6px;">{tier.label}</td>'
-                    f'<td style="text-align:right;padding:4px 6px;font-family:monospace;">{format_currency(tier.amount)}</td>'
-                    f'<td style="text-align:right;padding:4px 6px;font-family:monospace;">{format_rate(tier.rate_per_m)}</td>'
-                    f'<td style="text-align:right;padding:4px 6px;font-family:monospace;">{format_rate(tier.adj_rate_per_m)}</td>'
-                    f'<td style="text-align:right;padding:4px 6px;font-family:monospace;font-weight:600;">{format_currency(tier.premium)}</td>'
-                    f'<td style="text-align:right;padding:4px 6px;font-family:monospace;">{format_percent(tier.commission_pct)}</td>'
-                    f'<td style="text-align:right;padding:4px 6px;font-family:monospace;">{format_currency(tier.commission_amt)}</td>'
+                    f'<td style="text-align:right;padding:4px 6px;">{format_currency(tier.amount)}</td>'
+                    f'<td style="text-align:right;padding:4px 6px;">{format_rate(tier.rate_per_m)}</td>'
+                    f'<td style="text-align:right;padding:4px 6px;">{format_rate(tier.adj_rate_per_m)}</td>'
+                    f'<td style="text-align:right;padding:4px 6px;font-weight:600;">{format_currency(tier.premium)}</td>'
+                    f'<td style="text-align:right;padding:4px 6px;">{format_percent(tier.commission_pct)}</td>'
+                    f'<td style="text-align:right;padding:4px 6px;">{format_currency(tier.commission_amt)}</td>'
                     f'</tr>'
                 )
             prem_card_table += (
                 f'</tbody><tfoot>'
                 f'<tr style="border-top:2px solid {NAVY};font-weight:700;">'
                 f'<td style="padding:6px;color:{NAVY};" colspan="4">Total Premium</td>'
-                f'<td style="text-align:right;padding:6px;font-family:monospace;color:{NAVY};font-size:13px;">{format_currency(result.total_premium)}</td>'
-                f'<td style="text-align:right;padding:6px;font-family:monospace;color:{NAVY};">{format_percent(result.blended_commission_pct)}</td>'
-                f'<td style="text-align:right;padding:6px;font-family:monospace;color:{NAVY};">{format_currency(result.total_commission)}</td>'
+                f'<td style="text-align:right;padding:6px;color:{NAVY};font-size:13px;">{format_currency(result.total_premium)}</td>'
+                f'<td style="text-align:right;padding:6px;color:{NAVY};">{format_percent(result.blended_commission_pct)}</td>'
+                f'<td style="text-align:right;padding:6px;color:{NAVY};">{format_currency(result.total_commission)}</td>'
                 f'</tr>'
             )
             if maint_result:
                 prem_card_table += (
                     f'<tr style="border-top:1px solid {GRAY_BORDER};">'
                     f'<td style="padding:4px 6px;font-weight:600;" colspan="4">Maintenance Premium</td>'
-                    f'<td style="text-align:right;padding:4px 6px;font-family:monospace;font-weight:600;">{format_currency(maint_result.total_premium)}</td>'
+                    f'<td style="text-align:right;padding:4px 6px;font-weight:600;">{format_currency(maint_result.total_premium)}</td>'
                     f'<td colspan="2"></td></tr>'
                     f'<tr style="border-top:2px solid {NAVY};font-weight:700;">'
                     f'<td style="padding:6px;color:{NAVY};font-size:13px;" colspan="4">Combined Total</td>'
-                    f'<td style="text-align:right;padding:6px;font-family:monospace;color:{NAVY};font-size:13px;" colspan="3">'
+                    f'<td style="text-align:right;padding:6px;color:{NAVY};font-size:13px;" colspan="3">'
                     f'{format_currency(total_premium)}</td></tr>'
                 )
             prem_card_table += f'</tfoot></table>'
@@ -1055,12 +1055,12 @@ with tab_commission:
     # Header
     comm_header = (
         f'<th style="text-align:left;padding:0.35rem 0.5rem;font-weight:600;'
-        f'color:{GRAY_700};font-size:0.7rem;">Scale</th>'
+        f'color:{GRAY_700};font-size:0.8rem;">Scale</th>'
     )
     for tl in TIER_LABELS:
         comm_header += (
             f'<th style="text-align:right;padding:0.35rem 0.5rem;font-weight:600;'
-            f'color:{GRAY_700};font-size:0.7rem;">{tl}</th>'
+            f'color:{GRAY_700};font-size:0.8rem;">{tl}</th>'
         )
 
     # Body
@@ -1069,7 +1069,7 @@ with tab_commission:
         row = f'<td style="padding:0.3rem 0.5rem;font-weight:500;">{s["name"]}</td>'
         for t in s["tiers"]:
             row += (
-                f'<td style="padding:0.3rem 0.5rem;text-align:right;font-family:monospace;">'
+                f'<td style="padding:0.3rem 0.5rem;text-align:right;">'
                 f'{format_percent(t)}</td>'
             )
         comm_body += f'<tr style="border-bottom:1px solid {GRAY_100};">{row}</tr>'
@@ -1164,7 +1164,7 @@ with tab_compare:
 
     if cp_avail_plans:
         st.markdown(
-            f'<div style="font-size:0.7rem;font-weight:600;color:{GRAY_500};'
+            f'<div style="font-size:0.8rem;font-weight:600;color:{GRAY_500};'
             f'text-transform:uppercase;letter-spacing:0.03em;margin:0.5rem 0 0.25rem 0.25rem;">'
             f'Select Plans to Compare (up to 4)</div>',
             unsafe_allow_html=True,
@@ -1224,12 +1224,12 @@ with tab_compare:
             # Build comparison table
             cmp_header = (
                 f'<th style="text-align:left;padding:0.35rem 0.5rem;font-weight:600;'
-                f'color:{GRAY_700};font-size:0.7rem;">Contract Range</th>'
+                f'color:{GRAY_700};font-size:0.8rem;">Contract Range</th>'
             )
             for plan in selected_plans:
                 cmp_header += (
                     f'<th style="text-align:right;padding:0.35rem 0.5rem;font-weight:600;'
-                    f'color:{GRAY_700};font-size:0.7rem;">{plan}</th>'
+                    f'color:{GRAY_700};font-size:0.8rem;">{plan}</th>'
                 )
 
             cmp_body = ""
@@ -1242,7 +1242,7 @@ with tab_compare:
                 min_rate = min(valid_rates) if valid_rates else None
 
                 row = (
-                    f'<td style="padding:0.3rem 0.5rem;color:{GRAY_700};font-size:0.75rem;">'
+                    f'<td style="padding:0.3rem 0.5rem;color:{GRAY_700};font-size:0.8rem;">'
                     f'{label}</td>'
                 )
                 for rate_val in rates_for_tier:
@@ -1251,7 +1251,7 @@ with tab_compare:
                     color = GREEN if is_min else GRAY_700
                     weight = "700" if is_min else "400"
                     row += (
-                        f'<td style="padding:0.3rem 0.5rem;text-align:right;font-family:monospace;'
+                        f'<td style="padding:0.3rem 0.5rem;text-align:right;'
                         f'color:{color};font-weight:{weight};">{format_rate(rate_val)}</td>'
                     )
                 cmp_body += f'<tr style="border-bottom:1px solid {GRAY_100};">{row}</tr>'
@@ -1267,7 +1267,7 @@ with tab_compare:
                 for plan in selected_plans:
                     r = results_by_plan.get(plan)
                     row += (
-                        f'<td style="padding:0.3rem 0.5rem;text-align:right;font-family:monospace;'
+                        f'<td style="padding:0.3rem 0.5rem;text-align:right;'
                         f'color:{GRAY_700};">{format_currency(r.total_premium) if r else "-"}</td>'
                     )
                 cmp_foot += (
@@ -1284,7 +1284,7 @@ with tab_compare:
                     for plan in selected_plans:
                         mr = maint_results_by_plan.get(plan)
                         row += (
-                            f'<td style="padding:0.3rem 0.5rem;text-align:right;font-family:monospace;'
+                            f'<td style="padding:0.3rem 0.5rem;text-align:right;'
                             f'color:{GRAY_700};">{format_currency(mr.total_premium) if mr else "-"}</td>'
                         )
                     cmp_foot += f'<tr style="background:{GRAY_50};">{row}</tr>'
@@ -1308,7 +1308,7 @@ with tab_compare:
                               and sum(1 for t in all_totals if t == min_total) < len(selected_plans))
                     color = "#15803D" if is_min else NAVY
                     row += (
-                        f'<td style="padding:0.5rem;text-align:right;font-family:monospace;'
+                        f'<td style="padding:0.5rem;text-align:right;'
                         f'font-weight:700;color:{color};">'
                         f'{format_currency(total) if results_by_plan.get(plan) else "-"}</td>'
                     )
@@ -1321,7 +1321,7 @@ with tab_compare:
                 f'<div style="background:white;border:1px solid {GRAY_BORDER};border-radius:6px;'
                 f'overflow:hidden;box-shadow:0 1px 2px rgba(0,0,0,0.04);">'
                 f'<div style="background:{GRAY_50};padding:0.35rem 0.5rem;border-bottom:1px solid '
-                f'{GRAY_BORDER};font-size:0.7rem;font-weight:600;color:{NAVY};">'
+                f'{GRAY_BORDER};font-size:0.8rem;font-weight:600;color:{NAVY};">'
                 f'Side-by-Side Comparison</div>'
                 f'<table style="width:100%;border-collapse:collapse;font-size:0.8rem;">'
                 f'<thead><tr style="background:{GRAY_50};border-bottom:1px solid {GRAY_BORDER};">'
@@ -1378,7 +1378,7 @@ with tab_compare:
                     weight = "font-weight:700;" if is_min else ""
                     color_style = f"color:{color};" if color else ""
                     cp_card_table += (
-                        f'<td style="text-align:right;padding:4px 6px;font-family:monospace;'
+                        f'<td style="text-align:right;padding:4px 6px;'
                         f'{weight}{color_style}">{format_rate(rate_val)}</td>'
                     )
                 cp_card_table += f'</tr>'
@@ -1394,7 +1394,7 @@ with tab_compare:
                     mr = maint_results_by_plan.get(plan)
                     total = (cr.total_premium if cr else 0) + (mr.total_premium if mr else 0)
                     cp_card_table += (
-                        f'<td style="text-align:right;padding:6px;font-family:monospace;'
+                        f'<td style="text-align:right;padding:6px;'
                         f'color:{NAVY};font-size:13px;">'
                         f'{format_currency(total) if cr else "-"}</td>'
                     )
