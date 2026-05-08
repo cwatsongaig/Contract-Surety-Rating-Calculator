@@ -76,7 +76,7 @@ else:
 # ---------------------------------------------------------------------------
 # Rate Card HTML builder (for copy-to-clipboard feature)
 # ---------------------------------------------------------------------------
-def render_rate_card(title: str, content_html: str, card_id: str = "rate-card", max_width: str = "480px"):
+def render_rate_card(title: str, content_html: str, card_id: str = "rate-card", max_width: str = "520px"):
     """Render a professional styled rate card with GAI logo for email use."""
     logo_img = ""
     if GAI_LOGO_B64:
