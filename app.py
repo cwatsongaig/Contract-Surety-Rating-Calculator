@@ -76,7 +76,7 @@ else:
 # ---------------------------------------------------------------------------
 # Rate Card HTML builder (for copy-to-clipboard feature)
 # ---------------------------------------------------------------------------
-def render_rate_card(title: str, content_html: str, card_id: str = "rate-card"):
+def render_rate_card(title: str, content_html: str, card_id: str = "rate-card", max_width: str = "480px"):
     """Render a professional styled rate card with GAI logo for email use."""
     logo_img = ""
     if GAI_LOGO_B64:
@@ -89,7 +89,8 @@ def render_rate_card(title: str, content_html: str, card_id: str = "rate-card"):
         f'<div id="{card_id}" style="background:white;border:1px solid #D1D5DB;'
         f'border-radius:8px;padding:10px 14px;font-family:-apple-system,BlinkMacSystemFont,'
         f'Segoe UI,Roboto,sans-serif;font-size:13px;line-height:1.4;color:#1F2937;'
-        f'box-shadow:0 1px 3px rgba(0,0,0,0.08);box-sizing:border-box;width:100%;">'
+        f'box-shadow:0 1px 3px rgba(0,0,0,0.08);box-sizing:border-box;'
+        f'max-width:{max_width};width:100%;">'
         f'<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;'
         f'padding-bottom:6px;border-bottom:2px solid {NAVY};">'
         f'{logo_img}'
@@ -435,7 +436,7 @@ def format_percent(value):
 # ===========================================================================
 # Dialog functions for Rate Card popups
 # ===========================================================================
-@st.dialog("Rate Card", width="large")
+@st.dialog("Rate Card")
 def show_rate_lookup_card():
     """Show rate card dialog for selected rates."""
     selected = st.session_state.get("lu_selected_rates", [])
@@ -533,7 +534,7 @@ def show_compare_card():
         return
 
     card_content = data.get("html", "")
-    card_html = render_rate_card("Plan Comparison", card_content, "cmp-card")
+    card_html = render_rate_card("Plan Comparison", card_content, "cmp-card", max_width="700px")
     # Header 80px + info 40px + plan header 32px + 6 rows * 26px + total 40px + button 36px + padding
     render_copy_image_component("cmp-card", card_html, height=420)
 
