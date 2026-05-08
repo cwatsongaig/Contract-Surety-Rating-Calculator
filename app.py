@@ -600,6 +600,13 @@ with tab_lookup:
         and (not lu_plan or r["rating_plan"] == lu_plan)
     ]
 
+    # Rate Card button always visible above the count
+    selected_rate_data = st.session_state.get("lu_selected_rates", [])
+    if selected_rate_data:
+        num_selected = len(selected_rate_data)
+        if st.button(f"📋 Rate Card ({num_selected} selected)", key="lu_rate_card_btn"):
+            show_rate_lookup_card()
+
     st.markdown(
         f'<div style="font-size:0.8rem;color:{GRAY_400};padding-left:0.25rem;'
         f'margin-bottom:0.25rem;">{len(filtered_rates)} rate'
@@ -636,15 +643,6 @@ with tab_lookup:
             st.session_state["_lu_filter_key"] = filter_key
 
         df = st.session_state["_lu_df"]
-
-        # Get selected rows from previous interaction
-        prev_selected = st.session_state.get("lu_selected_rates", [])
-
-        # Show Rate Card button above the table (like Compare Plans)
-        if prev_selected:
-            num_selected = len(prev_selected)
-            if st.button(f"📋 Rate Card ({num_selected} selected)", key="lu_rate_card_btn"):
-                show_rate_lookup_card()
 
         # Use st.dataframe with selection
         event = st.dataframe(
@@ -1291,16 +1289,8 @@ with tab_compare:
             for idx, plan in enumerate(cp_avail_plans):
                 with plan_cols[idx % len(plan_cols)]:
                     is_selected = plan in st.session_state["cp_selected_plans"]
-                    if is_selected:
-                        # Highlighted selected state
-                        st.markdown(
-                            f'<div style="background:{NAVY};color:white;text-align:center;'
-                            f'padding:7px 12px;border-radius:6px;font-size:0.8rem;'
-                            f'font-weight:600;cursor:pointer;">{plan}</div>',
-                            unsafe_allow_html=True,
-                        )
                     if st.button(
-                        plan if not is_selected else " ",
+                        plan,
                         key=f"cp_plan_btn_{plan}",
                         use_container_width=True,
                     ):
@@ -1309,6 +1299,13 @@ with tab_compare:
                         elif len(st.session_state["cp_selected_plans"]) < 4:
                             st.session_state["cp_selected_plans"].append(plan)
                         _rerun()
+                    # Show visual indicator for selected state
+                    if is_selected:
+                        st.markdown(
+                            f'<div style="height:4px;background:{NAVY};border-radius:2px;'
+                            f'margin-top:-6px;"></div>',
+                            unsafe_allow_html=True,
+                        )
 
         # Clean up selections that are no longer available
         selected_plans = [p for p in st.session_state["cp_selected_plans"] if p in cp_avail_plans]
