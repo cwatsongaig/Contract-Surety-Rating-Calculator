@@ -101,6 +101,57 @@ def render_rate_card(title: str, content_html: str, card_id: str = "rate-card"):
     return card_html
 
 
+def render_copy_image_component(card_id: str, card_html: str, height: int = 80):
+    """Render an HTML component with Copy as Image and the card content."""
+    import streamlit.components.v1 as components
+
+    copy_component_html = f'''
+    <html>
+    <head>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+        <style>
+            body {{ margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, sans-serif; }}
+            .btn-row {{ display: flex; gap: 8px; margin-bottom: 8px; }}
+            .copy-btn, .status {{
+                padding: 6px 14px; border-radius: 6px; font-size: 12px; font-weight: 600;
+                cursor: pointer; border: none; color: white; background: {NAVY};
+            }}
+            .copy-btn:hover {{ opacity: 0.9; }}
+            .status {{ display: none; background: #059669; cursor: default; }}
+        </style>
+    </head>
+    <body>
+        <div class="btn-row">
+            <button class="copy-btn" onclick="copyAsImage()">Copy as Image</button>
+            <span class="status" id="status-{card_id}">Copied!</span>
+        </div>
+        <div id="card-container-{card_id}">
+            {card_html}
+        </div>
+        <script>
+            async function copyAsImage() {{
+                var el = document.getElementById("card-container-{card_id}");
+                try {{
+                    var canvas = await html2canvas(el, {{ backgroundColor: "#ffffff", scale: 2 }});
+                    canvas.toBlob(async function(blob) {{
+                        await navigator.clipboard.write([
+                            new ClipboardItem({{ "image/png": blob }})
+                        ]);
+                        var status = document.getElementById("status-{card_id}");
+                        status.style.display = "inline-block";
+                        setTimeout(function() {{ status.style.display = "none"; }}, 2000);
+                    }}, "image/png");
+                }} catch(err) {{
+                    alert("Copy failed. Try Download as Image instead.");
+                }}
+            }}
+        </script>
+    </body>
+    </html>
+    '''
+    components.html(copy_component_html, height=height, scrolling=True)
+
+
 def generate_rate_card_image(content_html: str) -> bytes:
     """Generate a PNG image from rate card HTML content using Pillow."""
     from PIL import Image, ImageDraw, ImageFont
@@ -408,10 +459,13 @@ def show_rate_lookup_card():
         f'<tbody>{card_rows}</tbody></table>'
     )
 
-    # Show the branded card
-    st.markdown(render_rate_card("Rate Card", card_content, "lu-card"), unsafe_allow_html=True)
+    # Show the branded card with Copy as Image button
+    card_html = render_rate_card("Rate Card", card_content, "lu-card")
+    num_rows = len(selected)
+    card_height = 80 + (num_rows * 22) + 60  # header + rows + button area
+    render_copy_image_component("lu-card", card_html, height=card_height)
 
-    # Download as image button
+    # Download as image (secondary option)
     img_bytes = generate_rate_card_image(card_content)
     st.download_button(
         label="Download as Image",
@@ -430,7 +484,8 @@ def show_premium_card():
         return
 
     card_content = data.get("html", "")
-    st.markdown(render_rate_card("Premium Rate Card", card_content, "prem-card"), unsafe_allow_html=True)
+    card_html = render_rate_card("Premium Rate Card", card_content, "prem-card")
+    render_copy_image_component("prem-card", card_html, height=400)
 
     img_bytes = generate_rate_card_image(card_content)
     st.download_button(
@@ -450,7 +505,8 @@ def show_compare_card():
         return
 
     card_content = data.get("html", "")
-    st.markdown(render_rate_card("Plan Comparison", card_content, "cmp-card"), unsafe_allow_html=True)
+    card_html = render_rate_card("Plan Comparison", card_content, "cmp-card")
+    render_copy_image_component("cmp-card", card_html, height=350)
 
     img_bytes = generate_rate_card_image(card_content)
     st.download_button(
