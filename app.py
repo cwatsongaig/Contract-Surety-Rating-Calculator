@@ -435,7 +435,7 @@ def format_percent(value):
 # ===========================================================================
 # Dialog functions for Rate Card popups
 # ===========================================================================
-@st.dialog("Rate Card")
+@st.dialog("Rate Card", width="large")
 def show_rate_lookup_card():
     """Show rate card dialog for selected rates."""
     selected = st.session_state.get("lu_selected_rates", [])
@@ -637,6 +637,9 @@ with tab_lookup:
 
         df = st.session_state["_lu_df"]
 
+        # Placeholder for Rate Card button above table
+        rate_card_slot = st.container()
+
         # Use st.dataframe with selection
         event = st.dataframe(
             df,
@@ -653,10 +656,11 @@ with tab_lookup:
         if selected_rows:
             selected_rate_data = [display_rates[i] for i in selected_rows if i < len(display_rates)]
             st.session_state["lu_selected_rates"] = selected_rate_data
-            # Show Rate Card button immediately on first selection
+            # Render Rate Card button in the slot above the table
             num_selected = len(selected_rate_data)
-            if st.button(f"📋 Rate Card ({num_selected} selected)", key="lu_rate_card_btn"):
-                show_rate_lookup_card()
+            with rate_card_slot:
+                if st.button(f"📋 Rate Card ({num_selected} selected)", key="lu_rate_card_btn"):
+                    show_rate_lookup_card()
         else:
             st.session_state["lu_selected_rates"] = []
 
