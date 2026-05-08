@@ -12,6 +12,9 @@ import streamlit as st
 import base64
 import os
 
+# Compatibility: st.rerun was experimental before 1.27
+_rerun = st.rerun if hasattr(st, 'rerun') else st.experimental_rerun
+
 from rate_data import (
     RATES,
     VARIOUS_RATES,
@@ -399,7 +402,7 @@ with tab_lookup:
             f'<tbody>{body_rows}</tbody>'
             f'</table></div>'
         )
-        st.html(table_html)
+        st.markdown(table_html, unsafe_allow_html=True)
 
         if len(filtered_rates) > 500:
             st.markdown(
@@ -849,7 +852,7 @@ with tab_premium:
                 f'<tfoot>{bk_foot}</tfoot>'
                 f'</table></div>'
             )
-            st.html(breakdown_html)
+            st.markdown(breakdown_html, unsafe_allow_html=True)
 
             # --- Copy Rate Card for Premium ---
             with st.expander("Copy Rate Card", expanded=False):
@@ -959,7 +962,7 @@ with tab_commission:
         f'<tbody>{comm_body}</tbody>'
         f'</table></div>'
     )
-    st.html(comm_html)
+    st.markdown(comm_html, unsafe_allow_html=True)
 
 
 # ===========================================================================
@@ -1051,21 +1054,21 @@ with tab_compare:
             st.session_state["cp_selected_plans"] = []
 
         # Render clickable plan buttons
-        plan_cols = st.columns(len(cp_avail_plans))
-        for idx, plan in enumerate(cp_avail_plans):
-            with plan_cols[idx]:
-                is_selected = plan in st.session_state["cp_selected_plans"]
-                if st.button(
-                    plan,
-                    key=f"cp_plan_btn_{plan}",
-                    type="primary" if is_selected else "secondary",
-                    use_container_width=True,
-                ):
-                    if plan in st.session_state["cp_selected_plans"]:
-                        st.session_state["cp_selected_plans"].remove(plan)
-                    elif len(st.session_state["cp_selected_plans"]) < 4:
-                        st.session_state["cp_selected_plans"].append(plan)
-                    st.rerun()
+        if len(cp_avail_plans) > 0:
+            plan_cols = st.columns(min(len(cp_avail_plans), 8))
+            for idx, plan in enumerate(cp_avail_plans):
+                with plan_cols[idx % len(plan_cols)]:
+                    is_selected = plan in st.session_state["cp_selected_plans"]
+                    if st.button(
+                        f"{'✓ ' if is_selected else ''}{plan}",
+                        key=f"cp_plan_btn_{plan}",
+                        use_container_width=True,
+                    ):
+                        if plan in st.session_state["cp_selected_plans"]:
+                            st.session_state["cp_selected_plans"].remove(plan)
+                        elif len(st.session_state["cp_selected_plans"]) < 4:
+                            st.session_state["cp_selected_plans"].append(plan)
+                        _rerun()
 
         # Clean up selections that are no longer available
         selected_plans = [p for p in st.session_state["cp_selected_plans"] if p in cp_avail_plans]
@@ -1206,7 +1209,7 @@ with tab_compare:
                 f'<tfoot>{cmp_foot}</tfoot>'
                 f'</table></div>'
             )
-            st.html(comp_html)
+            st.markdown(comp_html, unsafe_allow_html=True)
 
             # --- Copy Rate Card for Compare Plans ---
             with st.expander("Copy Rate Card", expanded=False):
