@@ -1,6 +1,6 @@
 {
-  "version": "1.1.0",
-  "build": 2,
+  "version": "2.0.0",
+  "build": 6,
   "date": "2026-05-08",
-  "description": "Streamlit app updated with Copy Rate Card, GAI logo, clickable plan buttons, and default company"
+  "description": "Streamlit-only repo with interactive rate selection, Copy Rate Card, and GAI logo"
 }
