@@ -114,7 +114,7 @@ def render_copy_image_component(card_id: str, card_html: str, height: int = 80):
     <head>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
         <style>
-            body {{ margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }}
+            html, body {{ margin: 0; padding: 0; overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }}
             .btn-row {{ display: flex; gap: 10px; margin-bottom: 8px; }}
             .copy-btn {{
                 padding: 6px 14px; border-radius: 6px; font-size: 13px; font-weight: 600;
@@ -129,14 +129,26 @@ def render_copy_image_component(card_id: str, card_html: str, height: int = 80):
         </style>
     </head>
     <body>
-        <div class="btn-row">
-            <button class="copy-btn" onclick="copyAsImage()">Copy as Image</button>
-            <span class="status" id="status-{card_id}">Copied!</span>
-        </div>
-        <div id="card-container-{card_id}">
-            {card_html}
+        <div id="wrapper-{card_id}">
+            <div class="btn-row">
+                <button class="copy-btn" onclick="copyAsImage()">Copy as Image</button>
+                <span class="status" id="status-{card_id}">Copied!</span>
+            </div>
+            <div id="card-container-{card_id}">
+                {card_html}
+            </div>
         </div>
         <script>
+            // Auto-resize iframe to fit content
+            function resizeFrame() {{
+                var wrapper = document.getElementById("wrapper-{card_id}");
+                var h = wrapper.scrollHeight + 10;
+                window.frameElement.style.height = h + "px";
+            }}
+            window.addEventListener("load", resizeFrame);
+            setTimeout(resizeFrame, 100);
+            setTimeout(resizeFrame, 500);
+
             async function copyAsImage() {{
                 var el = document.getElementById("card-container-{card_id}");
                 try {{
@@ -157,7 +169,7 @@ def render_copy_image_component(card_id: str, card_html: str, height: int = 80):
     </body>
     </html>
     '''
-    components.html(copy_component_html, height=height, scrolling=True)
+    components.html(copy_component_html, height=height, scrolling=False)
 
 
 def generate_rate_card_image(content_html: str) -> bytes:
