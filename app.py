@@ -534,7 +534,7 @@ def show_compare_card():
         return
 
     card_content = data.get("html", "")
-    card_html = render_rate_card("Plan Comparison", card_content, "cmp-card", max_width="700px")
+    card_html = render_rate_card("Plan Comparison", card_content, "cmp-card")
     # Header 80px + info 40px + plan header 32px + 6 rows * 26px + total 40px + button 36px + padding
     render_copy_image_component("cmp-card", card_html, height=420)
 
