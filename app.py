@@ -93,34 +93,7 @@ def render_rate_card(title: str, content_html: str, card_id: str = "rate-card"):
         f'</div>'
     )
 
-    # JavaScript for copy-to-clipboard
-    copy_js = (
-        f'<script>'
-        f'function copyRateCard_{card_id.replace("-", "_")}() {{'
-        f'  var card = document.getElementById("{card_id}");'
-        f'  var range = document.createRange();'
-        f'  range.selectNode(card);'
-        f'  window.getSelection().removeAllRanges();'
-        f'  window.getSelection().addRange(range);'
-        f'  document.execCommand("copy");'
-        f'  window.getSelection().removeAllRanges();'
-        f'  var btn = document.getElementById("copy-btn-{card_id}");'
-        f'  btn.innerText = "Copied!";'
-        f'  setTimeout(function() {{ btn.innerText = "Copy to Clipboard"; }}, 2000);'
-        f'}}'
-        f'</script>'
-    )
-
-    copy_button = (
-        f'<div style="margin:0.5rem 0 0.25rem 0;">'
-        f'<button id="copy-btn-{card_id}" onclick="copyRateCard_{card_id.replace("-", "_")}()" '
-        f'style="background:{NAVY};color:white;border:none;padding:6px 14px;'
-        f'border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;">'
-        f'Copy to Clipboard</button>'
-        f'</div>'
-    )
-
-    return copy_button + card_html + copy_js
+    return card_html
 
 # ---------------------------------------------------------------------------
 # Compact CSS
@@ -486,7 +459,7 @@ with tab_lookup:
                 f'{card_table_header}</tr></thead>'
                 f'<tbody>{card_rows}</tbody></table>'
             )
-            st.html(render_rate_card("Rate Card", card_content, "rate-lookup-card"))
+            st.markdown(render_rate_card("Rate Card", card_content, "rate-lookup-card"), unsafe_allow_html=True)
 
     else:
         st.markdown(
@@ -942,7 +915,7 @@ with tab_premium:
                     )
                 prem_card_table += f'</tfoot></table>'
 
-                st.html(render_rate_card("Premium Rate Card", prem_card_header + prem_card_table, "premium-card"))
+                st.markdown(render_rate_card("Premium Rate Card", prem_card_header + prem_card_table, "premium-card"), unsafe_allow_html=True)
 
 
 # ===========================================================================
@@ -1307,7 +1280,7 @@ with tab_compare:
 
                 cp_card_table += f'</tbody></table>'
 
-                st.html(render_rate_card("Plan Comparison Rate Card", cp_card_header + cp_card_table, "compare-card"))
+                st.markdown(render_rate_card("Plan Comparison Rate Card", cp_card_header + cp_card_table, "compare-card"), unsafe_allow_html=True)
 
     if not cp_avail_plans:
         st.markdown(
