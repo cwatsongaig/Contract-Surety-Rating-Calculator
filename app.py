@@ -87,11 +87,11 @@ def render_rate_card(title: str, content_html: str, card_id: str = "rate-card"):
 
     card_html = (
         f'<div id="{card_id}" style="background:white;border:1px solid #D1D5DB;'
-        f'border-radius:8px;padding:20px 24px;font-family:-apple-system,BlinkMacSystemFont,'
-        f'Segoe UI,Roboto,sans-serif;font-size:13px;line-height:1.6;color:#1F2937;'
-        f'box-shadow:0 1px 3px rgba(0,0,0,0.08);">'
-        f'<div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;'
-        f'padding-bottom:12px;border-bottom:2px solid {NAVY};">'
+        f'border-radius:8px;padding:16px 20px;font-family:-apple-system,BlinkMacSystemFont,'
+        f'Segoe UI,Roboto,sans-serif;font-size:13px;line-height:1.5;color:#1F2937;'
+        f'box-shadow:0 1px 3px rgba(0,0,0,0.08);max-width:560px;">'
+        f'<div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;'
+        f'padding-bottom:10px;border-bottom:2px solid {NAVY};">'
         f'{logo_img}'
         f'<div>'
         f'<div style="font-size:14px;font-weight:700;color:{NAVY};">Contract Rate Information</div>'
@@ -1032,7 +1032,7 @@ with tab_premium:
             )
             
             # --- Copy Rate Card for Premium (at top) ---
-            # Build professional vertical premium card
+            # Build professional premium card with proper columns
             prem_card = (
                 f'<div style="margin-bottom:10px;">'
                 f'<div style="font-size:15px;font-weight:700;color:{NAVY};margin-bottom:3px;">'
@@ -1049,24 +1049,40 @@ with tab_premium:
                 f'</div>'
             )
 
-            # Tier breakdown
+            # Table header
+            prem_card += (
+                f'<table style="width:100%;border-collapse:collapse;font-size:12px;">'
+                f'<thead><tr style="border-bottom:1px solid {GRAY_BORDER};">'
+                f'<th style="text-align:left;padding:4px 6px;font-weight:600;color:{GRAY_700};">Range</th>'
+                f'<th style="text-align:right;padding:4px 6px;font-weight:600;color:{GRAY_700};">Rate/M</th>'
+                f'<th style="text-align:right;padding:4px 6px;font-weight:600;color:{GRAY_700};">Premium</th>'
+                f'<th style="text-align:right;padding:4px 6px;font-weight:600;color:{GRAY_700};">Comm %</th>'
+                f'<th style="text-align:right;padding:4px 6px;font-weight:600;color:{GRAY_700};">Comm $</th>'
+                f'</tr></thead><tbody>'
+            )
+
+            # Tier rows with range_label
             for j, tier in enumerate(result.tiers):
                 if tier.amount == 0:
                     continue
                 bg = "#F9FAFB" if j % 2 == 0 else "white"
                 prem_card += (
-                    f'<div style="display:flex;justify-content:space-between;padding:6px 10px;'
-                    f'background:{bg};border-radius:3px;font-size:13px;">'
-                    f'<span style="color:{GRAY_500};">{tier.label}</span>'
-                    f'<span>Rate: <b>{format_rate(tier.adj_rate_per_m)}</b> &nbsp;&nbsp; '
-                    f'Premium: <b>{format_currency(tier.premium)}</b></span>'
-                    f'</div>'
+                    f'<tr style="background:{bg};">'
+                    f'<td style="padding:5px 6px;"><span style="font-weight:500;">{tier.label}</span> '
+                    f'<span style="color:{GRAY_400};font-size:11px;">{tier.range_label}</span></td>'
+                    f'<td style="text-align:right;padding:5px 6px;">{format_rate(tier.adj_rate_per_m)}</td>'
+                    f'<td style="text-align:right;padding:5px 6px;font-weight:600;">{format_currency(tier.premium)}</td>'
+                    f'<td style="text-align:right;padding:5px 6px;">{format_percent(tier.commission_pct)}</td>'
+                    f'<td style="text-align:right;padding:5px 6px;">{format_currency(tier.commission_amt)}</td>'
+                    f'</tr>'
                 )
+
+            prem_card += f'</tbody></table>'
 
             # Totals section
             prem_card += (
-                f'<div style="margin-top:12px;padding-top:10px;border-top:2px solid {NAVY};">'
-                f'<div style="display:flex;justify-content:space-between;font-size:15px;'
+                f'<div style="margin-top:10px;padding-top:8px;border-top:2px solid {NAVY};">'
+                f'<div style="display:flex;justify-content:space-between;font-size:14px;'
                 f'font-weight:700;color:{NAVY};">'
                 f'<span>Total Premium</span>'
                 f'<span>{format_currency(result.total_premium)}</span>'
@@ -1079,18 +1095,18 @@ with tab_premium:
                     f'<span>Maintenance Premium</span>'
                     f'<span style="font-weight:600;">{format_currency(maint_result.total_premium)}</span>'
                     f'</div>'
-                    f'<div style="display:flex;justify-content:space-between;font-size:15px;'
+                    f'<div style="display:flex;justify-content:space-between;font-size:14px;'
                     f'font-weight:700;color:{NAVY};padding-top:6px;margin-top:6px;'
                     f'border-top:2px solid {NAVY};">'
                     f'<span>Combined Total</span>'
                     f'<span>{format_currency(total_premium)}</span>'
                     f'</div>'
                 )
-            # Commission
+            # Commission summary
             prem_card += (
-                f'<div style="display:flex;justify-content:space-between;padding-top:6px;'
+                f'<div style="display:flex;justify-content:space-between;padding-top:4px;'
                 f'font-size:12px;color:{GRAY_400};">'
-                f'<span>Commission ({format_percent(result.blended_commission_pct)})</span>'
+                f'<span>Blended Commission ({format_percent(result.blended_commission_pct)})</span>'
                 f'<span>{format_currency(result.total_commission)}</span>'
                 f'</div>'
             )
