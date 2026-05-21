@@ -1345,103 +1345,52 @@ with tab_compare:
 
             has_maint_compare = len(maint_by_plan) > 0
 
-            # --- Table header row (rendered as HTML) ---
-            cmp_header = (
-                f'<th style="text-align:left;padding:0.35rem 0.5rem;font-weight:600;'
-                f'color:{GRAY_700};font-size:0.8rem;">Contract Range</th>'
-            )
-            for plan in selected_plans:
-                cmp_header += (
-                    f'<th style="text-align:right;padding:0.35rem 0.5rem;font-weight:600;'
-                    f'color:{GRAY_700};font-size:0.8rem;">{plan}</th>'
-                )
-
-            # Render table card title + header + D/C row as one HTML block
-            # D/C inputs rendered as HTML <input> elements with inline JS for rounding
-            dc_input_cells = (
-                f'<td style="padding:0.25rem 0.5rem;font-weight:600;color:{GRAY_500};'
-                f'font-size:0.75rem;background:{GRAY_50};border-bottom:1px solid {GRAY_BORDER};">'
-                f'Debit/(Credit) %</td>'
-            )
-            for plan in selected_plans:
-                rate_entry = rates_by_plan.get(plan)
-                allowable = rate_entry.get("debit_credit") if rate_entry else None
-                dc_key = f"cp_dc_{plan}"
-                current_val = st.session_state.get(dc_key, "0")
-                if allowable is not None:
-                    max_pct = int(abs(allowable) * 100)
-                    placeholder = f"±{max_pct}%"
-                    disabled_attr = ""
-                else:
-                    placeholder = "N/A"
-                    disabled_attr = "disabled"
-                dc_input_cells += (
-                    f'<td style="padding:0.25rem 0.5rem;text-align:right;background:{GRAY_50};'
-                    f'border-bottom:1px solid {GRAY_BORDER};">'
-                    f'<input type="text" value="{current_val}" placeholder="{placeholder}" '
-                    f'{disabled_attr} '
-                    f'style="width:60px;padding:2px 6px;border:1px solid {GRAY_BORDER};'
-                    f'border-radius:4px;font-family:monospace;font-size:0.8rem;text-align:right;'
-                    f'background:white;" />'
-                    f'<span style="color:{GRAY_400};font-size:0.75rem;margin-left:2px;">%</span>'
-                    f'</td>'
-                )
-
-            table_top_html = (
-                f'<div style="background:white;border:1px solid {GRAY_BORDER};border-radius:6px;'
-                f'overflow:hidden;box-shadow:0 1px 2px rgba(0,0,0,0.04);">'
-                f'<div style="background:{GRAY_50};padding:0.35rem 0.5rem;border-bottom:1px solid '
-                f'{GRAY_BORDER};font-size:0.8rem;font-weight:600;color:{NAVY};">'
-                f'Side-by-Side Comparison</div>'
-                f'<table style="width:100%;border-collapse:collapse;font-size:0.8rem;">'
-                f'<thead><tr style="background:{GRAY_50};border-bottom:1px solid {GRAY_BORDER};">'
-                f'{cmp_header}</tr>'
-                f'<tr>{dc_input_cells}</tr>'
-                f'</thead></table></div>'
-            )
-            st.html(table_top_html)
-
-            # --- Actual D/C inputs (hidden visually but functional for Streamlit state) ---
-            # Use a container with 0 height to hide the real inputs
-            with st.container():
+            # --- D/C inputs as Streamlit widgets above table ---
+            dc_cols = st.columns([1.5] + [1] * len(selected_plans))
+            cp_dc_values = {}
+            with dc_cols[0]:
                 st.markdown(
-                    '<div style="height:0;overflow:hidden;margin:0;padding:0;">',
+                    f'<div style="font-size:0.75rem;font-weight:600;color:{GRAY_500};'
+                    f'padding-top:0.4rem;">Debit/(Credit) %</div>',
                     unsafe_allow_html=True,
                 )
-                dc_cols = st.columns(len(selected_plans))
-                cp_dc_values = {}
-                for idx, plan in enumerate(selected_plans):
-                    with dc_cols[idx]:
-                        rate_entry = rates_by_plan.get(plan)
-                        allowable = rate_entry.get("debit_credit") if rate_entry else None
-                        dc_key = f"cp_dc_{plan}"
+            for idx, plan in enumerate(selected_plans):
+                with dc_cols[idx + 1]:
+                    rate_entry = rates_by_plan.get(plan)
+                    allowable = rate_entry.get("debit_credit") if rate_entry else None
+                    if allowable is not None:
+                        max_pct = int(abs(allowable) * 100)
+                        lbl = f"D/C (±{max_pct}%)"
+                    else:
+                        lbl = "D/C"
 
-                        def _make_dc_formatter(key):
-                            def _format():
-                                raw = st.session_state.get(key, "").strip()
-                                if not raw:
-                                    return
-                                try:
-                                    val = float(raw)
-                                except ValueError:
-                                    return
-                                rounded = round(val * 100) / 100
-                                st.session_state[key] = str(rounded)
-                            return _format
+                    dc_key = f"cp_dc_{plan}"
 
-                        dc_raw = st.text_input(
-                            f"dc_{plan}",
-                            value="0",
-                            key=dc_key,
-                            disabled=allowable is None,
-                            on_change=_make_dc_formatter(dc_key),
-                            label_visibility="collapsed",
-                        )
-                        try:
-                            cp_dc_values[plan] = float(dc_raw.strip()) / 100.0
-                        except (ValueError, TypeError):
-                            cp_dc_values[plan] = 0.0
-                st.markdown('</div>', unsafe_allow_html=True)
+                    def _make_dc_formatter(key):
+                        def _format():
+                            raw = st.session_state.get(key, "").strip()
+                            if not raw:
+                                return
+                            try:
+                                val = float(raw)
+                            except ValueError:
+                                return
+                            rounded = round(val * 100) / 100
+                            st.session_state[key] = str(rounded)
+                        return _format
+
+                    dc_raw = st.text_input(
+                        lbl,
+                        value="0",
+                        key=dc_key,
+                        disabled=allowable is None,
+                        on_change=_make_dc_formatter(dc_key),
+                        label_visibility="collapsed",
+                    )
+                    try:
+                        cp_dc_values[plan] = float(dc_raw.strip()) / 100.0
+                    except (ValueError, TypeError):
+                        cp_dc_values[plan] = 0.0
 
             # Calculate results
             results_by_plan = {}
@@ -1604,9 +1553,10 @@ with tab_compare:
 
             comp_html = (
                 f'<div style="background:white;border:1px solid {GRAY_BORDER};border-radius:6px;'
-                f'border-top-left-radius:0;border-top-right-radius:0;'
-                f'overflow:hidden;box-shadow:0 1px 2px rgba(0,0,0,0.04);margin-top:-1rem;">'
+                f'overflow:hidden;box-shadow:0 1px 2px rgba(0,0,0,0.04);">'
                 f'<table style="width:100%;border-collapse:collapse;font-size:0.8rem;">'
+                f'<thead><tr style="background:{GRAY_50};border-bottom:1px solid {GRAY_BORDER};">'
+                f'{cmp_header}</tr></thead>'
                 f'<tbody>{cmp_body}</tbody>'
                 f'<tfoot>{cmp_foot}</tfoot>'
                 f'</table></div>'
