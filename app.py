@@ -33,6 +33,7 @@ from rate_engine import (
     calculate_premium,
     find_maintenance_rate,
     apply_additional_maint_years,
+    validate_debit_credit,
 )
 
 # ---------------------------------------------------------------------------
@@ -1412,6 +1413,9 @@ with tab_compare:
                     f'color:{GRAY_700};font-size:0.8rem;">{plan}</th>'
                 )
 
+            # Check if any plan has a non-zero D/C value
+            has_dc = any(cp_dc_values.get(plan, 0.0) != 0.0 for plan in selected_plans)
+
             cmp_body = ""
             for i, label in enumerate(TIER_LABELS):
                 rates_for_tier = [
@@ -1421,6 +1425,7 @@ with tab_compare:
                 valid_rates = [r for r in rates_for_tier if r is not None]
                 min_rate = min(valid_rates) if valid_rates else None
 
+                # Base rate row
                 row = (
                     f'<td style="padding:0.3rem 0.5rem;color:{GRAY_700};font-size:0.8rem;">'
                     f'{label}</td>'
@@ -1435,6 +1440,54 @@ with tab_compare:
                         f'color:{color};font-weight:{weight};">{format_rate(rate_val)}</td>'
                     )
                 cmp_body += f'<tr style="border-bottom:1px solid {GRAY_100};">{row}</tr>'
+
+            # D/C % row (only shown when at least one plan has non-zero D/C)
+            if has_dc:
+                dc_row = (
+                    f'<td style="padding:0.3rem 0.5rem;font-weight:600;color:{GRAY_500};'
+                    f'font-size:0.75rem;border-top:1px solid {GRAY_BORDER};">Debit/Credit</td>'
+                )
+                for plan in selected_plans:
+                    dc_pct = cp_dc_values.get(plan, 0.0)
+                    dc_display = f"{dc_pct * 100:.2f}%" if dc_pct != 0 else "-"
+                    dc_row += (
+                        f'<td style="padding:0.3rem 0.5rem;text-align:right;font-size:0.75rem;'
+                        f'color:{GRAY_500};border-top:1px solid {GRAY_BORDER};">{dc_display}</td>'
+                    )
+                cmp_body += f'<tr style="border-bottom:1px solid {GRAY_100};">{dc_row}</tr>'
+
+                # Adj. Rate/M rows (one per tier)
+                for i, label in enumerate(TIER_LABELS):
+                    adj_row = (
+                        f'<td style="padding:0.3rem 0.5rem;color:{GRAY_500};font-size:0.75rem;">'
+                        f'Adj. Rate {label}</td>'
+                    )
+                    adj_rates_for_tier = []
+                    for plan in selected_plans:
+                        base_rate = rates_by_plan.get(plan, {}).get("tiers", [None]*6)[i]
+                        dc_pct = cp_dc_values.get(plan, 0.0)
+                        if base_rate is not None:
+                            allowable = rates_by_plan.get(plan, {}).get("debit_credit")
+                            valid_pct = validate_debit_credit(dc_pct, allowable)
+                            adj = round(base_rate * (1 + valid_pct) * 100) / 100
+                            adj_rates_for_tier.append(adj)
+                        else:
+                            adj_rates_for_tier.append(None)
+
+                    valid_adj = [r for r in adj_rates_for_tier if r is not None]
+                    min_adj = min(valid_adj) if valid_adj else None
+
+                    for adj_val in adj_rates_for_tier:
+                        is_min = (adj_val == min_adj and len(valid_adj) > 1
+                                  and adj_val is not None)
+                        color = GREEN if is_min else GRAY_700
+                        weight = "700" if is_min else "400"
+                        adj_row += (
+                            f'<td style="padding:0.3rem 0.5rem;text-align:right;'
+                            f'color:{color};font-weight:{weight};font-size:0.8rem;">'
+                            f'{format_rate(adj_val)}</td>'
+                        )
+                    cmp_body += f'<tr style="border-bottom:1px solid {GRAY_100};">{adj_row}</tr>'
 
             # Premium totals (if contract amount entered)
             cmp_foot = ""
