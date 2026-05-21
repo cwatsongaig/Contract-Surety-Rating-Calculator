@@ -76,7 +76,7 @@ else:
 # ---------------------------------------------------------------------------
 # Rate Card HTML builder (for copy-to-clipboard feature)
 # ---------------------------------------------------------------------------
-def render_rate_card(title: str, content_html: str, card_id: str = "rate-card", max_width: str = "520px"):
+def render_rate_card(title: str, content_html: str, card_id: str = "rate-card", max_width: str = "560px"):
     """Render a professional styled rate card with GAI logo for email use."""
     logo_img = ""
     if GAI_LOGO_B64:
@@ -787,20 +787,34 @@ with tab_premium:
             max_dc = matching_rate.get("debit_credit")
             if max_dc is not None:
                 max_dc_int = int(abs(max_dc) * 100)
-                dc_label = f"D/C % (+/-{max_dc_int}%)"
+                dc_label = f"D/C % (max ±{max_dc_int}%)"
             else:
                 dc_label = "D/C %"
                 max_dc_int = 0
-            dc_input = st.number_input(
+
+            def _format_pc_dc():
+                raw = st.session_state.get("pc_dc", "").strip()
+                if not raw:
+                    return
+                try:
+                    val = float(raw)
+                except ValueError:
+                    return
+                rounded = round(val * 100) / 100
+                st.session_state["pc_dc"] = str(rounded)
+
+            dc_input_raw = st.text_input(
                 dc_label,
-                min_value=-max_dc_int if max_dc is not None else 0,
-                max_value=max_dc_int if max_dc is not None else 0,
-                value=0,
-                step=1,
+                value="0",
                 key="pc_dc",
                 disabled=max_dc is None,
+                on_change=_format_pc_dc,
             )
-            debit_credit_pct = dc_input / 100.0
+            try:
+                dc_val = float(dc_input_raw.strip())
+            except (ValueError, TypeError):
+                dc_val = 0.0
+            debit_credit_pct = dc_val / 100.0
 
         with cd3:
             scale_names = [s["name"] for s in COMMISSION_SCALES]
@@ -1320,6 +1334,52 @@ with tab_compare:
                 if r["rating_plan"] in selected_plans:
                     rates_by_plan[r["rating_plan"]] = r
 
+            # Per-plan debit/credit inputs
+            st.markdown(
+                f'<div style="font-size:0.8rem;font-weight:600;color:{GRAY_500};'
+                f'text-transform:uppercase;letter-spacing:0.03em;margin:0.5rem 0 0.25rem 0.25rem;">'
+                f'Debit / (Credit) % by Plan</div>',
+                unsafe_allow_html=True,
+            )
+            dc_cols = st.columns(len(selected_plans))
+            cp_dc_values = {}
+            for idx, plan in enumerate(selected_plans):
+                with dc_cols[idx]:
+                    rate_entry = rates_by_plan.get(plan)
+                    allowable = rate_entry.get("debit_credit") if rate_entry else None
+                    if allowable is not None:
+                        max_pct = int(abs(allowable) * 100)
+                        lbl = f"{plan} (max ±{max_pct}%)"
+                    else:
+                        lbl = f"{plan}"
+
+                    dc_key = f"cp_dc_{plan}"
+
+                    def _make_dc_formatter(key):
+                        def _format():
+                            raw = st.session_state.get(key, "").strip()
+                            if not raw:
+                                return
+                            try:
+                                val = float(raw)
+                            except ValueError:
+                                return
+                            rounded = round(val * 100) / 100
+                            st.session_state[key] = str(rounded)
+                        return _format
+
+                    dc_raw = st.text_input(
+                        lbl,
+                        value="0",
+                        key=dc_key,
+                        disabled=allowable is None,
+                        on_change=_make_dc_formatter(dc_key),
+                    )
+                    try:
+                        cp_dc_values[plan] = float(dc_raw.strip()) / 100.0
+                    except (ValueError, TypeError):
+                        cp_dc_values[plan] = 0.0
+
             # Maintenance rates
             maint_by_plan = {}
             if cp_class != "Maintenance":
@@ -1335,9 +1395,11 @@ with tab_compare:
             maint_results_by_plan = {}
             if cp_amount > 0:
                 for plan, rate in rates_by_plan.items():
-                    results_by_plan[plan] = calculate_premium(rate, cp_amount, 0.0)
+                    dc_pct = cp_dc_values.get(plan, 0.0)
+                    results_by_plan[plan] = calculate_premium(rate, cp_amount, dc_pct)
                 for plan, rate in maint_by_plan.items():
-                    maint_results_by_plan[plan] = calculate_premium(rate, cp_amount, 0.0)
+                    dc_pct = cp_dc_values.get(plan, 0.0)
+                    maint_results_by_plan[plan] = calculate_premium(rate, cp_amount, dc_pct)
 
             # Build comparison table
             cmp_header = (
