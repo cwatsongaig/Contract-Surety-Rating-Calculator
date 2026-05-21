@@ -1092,7 +1092,7 @@ with tab_premium:
                 f'<div style="display:flex;gap:14px;margin-bottom:8px;padding-bottom:6px;'
                 f'border-bottom:1px solid {GRAY_BORDER};font-size:12px;color:{GRAY_500};">'
                 f'<span>Amount: <b style="color:{GRAY_700};">{format_currency(contract_amount)}</b></span>'
-                f'<span>D/C: <b style="color:{GRAY_700};">{dc_input}%</b></span>'
+                f'<span>D/C: <b style="color:{GRAY_700};">{dc_val}%</b></span>'
                 f'<span>Scale: <b style="color:{GRAY_700};">{scale_name}</b></span>'
                 f'</div>'
             )
