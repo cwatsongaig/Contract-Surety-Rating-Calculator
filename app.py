@@ -1335,13 +1335,33 @@ with tab_compare:
                 if r["rating_plan"] in selected_plans:
                     rates_by_plan[r["rating_plan"]] = r
 
-            # Per-plan debit/credit inputs (collected before table render)
-            dc_cols = st.columns([0.5] + [1] * len(selected_plans))
+            # Maintenance rates
+            maint_by_plan = {}
+            if cp_class != "Maintenance":
+                for plan in selected_plans:
+                    maint = find_maintenance_rate(RATES, cp_company, cp_state, plan)
+                    if maint and not all(t is None for t in maint["tiers"]):
+                        maint_by_plan[plan] = maint
+
+            has_maint_compare = len(maint_by_plan) > 0
+
+            # --- Comparison table card with D/C inputs at top ---
+            st.markdown(
+                f'<div style="background:white;border:1px solid {GRAY_BORDER};border-radius:6px;'
+                f'box-shadow:0 1px 2px rgba(0,0,0,0.04);overflow:hidden;">'
+                f'<div style="background:{GRAY_50};padding:0.35rem 0.5rem;border-bottom:1px solid '
+                f'{GRAY_BORDER};font-size:0.8rem;font-weight:600;color:{NAVY};">'
+                f'Side-by-Side Comparison</div></div>',
+                unsafe_allow_html=True,
+            )
+
+            # D/C inputs aligned to table columns (first col = label, rest = plan columns)
+            dc_cols = st.columns([1.5] + [1] * len(selected_plans))
             cp_dc_values = {}
             with dc_cols[0]:
                 st.markdown(
                     f'<div style="font-size:0.7rem;font-weight:600;color:{GRAY_500};'
-                    f'padding-top:1.6rem;">D/C %</div>',
+                    f'padding-top:1.5rem;">Debit/(Credit) %</div>',
                     unsafe_allow_html=True,
                 )
             for idx, plan in enumerate(selected_plans):
@@ -1380,16 +1400,6 @@ with tab_compare:
                         cp_dc_values[plan] = float(dc_raw.strip()) / 100.0
                     except (ValueError, TypeError):
                         cp_dc_values[plan] = 0.0
-
-            # Maintenance rates
-            maint_by_plan = {}
-            if cp_class != "Maintenance":
-                for plan in selected_plans:
-                    maint = find_maintenance_rate(RATES, cp_company, cp_state, plan)
-                    if maint and not all(t is None for t in maint["tiers"]):
-                        maint_by_plan[plan] = maint
-
-            has_maint_compare = len(maint_by_plan) > 0
 
             # Calculate results
             results_by_plan = {}
@@ -1552,10 +1562,8 @@ with tab_compare:
 
             comp_html = (
                 f'<div style="background:white;border:1px solid {GRAY_BORDER};border-radius:6px;'
-                f'overflow:hidden;box-shadow:0 1px 2px rgba(0,0,0,0.04);">'
-                f'<div style="background:{GRAY_50};padding:0.35rem 0.5rem;border-bottom:1px solid '
-                f'{GRAY_BORDER};font-size:0.8rem;font-weight:600;color:{NAVY};">'
-                f'Side-by-Side Comparison</div>'
+                f'border-top-left-radius:0;border-top-right-radius:0;'
+                f'overflow:hidden;box-shadow:0 1px 2px rgba(0,0,0,0.04);margin-top:-1rem;">'
                 f'<table style="width:100%;border-collapse:collapse;font-size:0.8rem;">'
                 f'<thead><tr style="background:{GRAY_50};border-bottom:1px solid {GRAY_BORDER};">'
                 f'{cmp_header}</tr></thead>'
