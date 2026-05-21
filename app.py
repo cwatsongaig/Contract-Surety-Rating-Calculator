@@ -1334,22 +1334,22 @@ with tab_compare:
                 if r["rating_plan"] in selected_plans:
                     rates_by_plan[r["rating_plan"]] = r
 
-            # Per-plan debit/credit inputs
-            st.markdown(
-                f'<div style="font-size:0.8rem;font-weight:600;color:{GRAY_500};'
-                f'text-transform:uppercase;letter-spacing:0.03em;margin:0.5rem 0 0.25rem 0.25rem;">'
-                f'Debit / (Credit) % by Plan</div>',
-                unsafe_allow_html=True,
-            )
-            dc_cols = st.columns(len(selected_plans))
+            # Per-plan debit/credit inputs (collected before table render)
+            dc_cols = st.columns([0.5] + [1] * len(selected_plans))
             cp_dc_values = {}
+            with dc_cols[0]:
+                st.markdown(
+                    f'<div style="font-size:0.7rem;font-weight:600;color:{GRAY_500};'
+                    f'padding-top:1.6rem;">D/C %</div>',
+                    unsafe_allow_html=True,
+                )
             for idx, plan in enumerate(selected_plans):
-                with dc_cols[idx]:
+                with dc_cols[idx + 1]:
                     rate_entry = rates_by_plan.get(plan)
                     allowable = rate_entry.get("debit_credit") if rate_entry else None
                     if allowable is not None:
                         max_pct = int(abs(allowable) * 100)
-                        lbl = f"{plan} (max ±{max_pct}%)"
+                        lbl = f"{plan} (±{max_pct}%)"
                     else:
                         lbl = f"{plan}"
 
