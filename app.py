@@ -1345,13 +1345,25 @@ with tab_compare:
 
             has_maint_compare = len(maint_by_plan) > 0
 
-            # --- D/C inputs as Streamlit widgets above table ---
+            # --- D/C inputs inside the comparison table card ---
+            # First render the card header
+            st.markdown(
+                f'<div style="background:white;border:1px solid {GRAY_BORDER};border-radius:6px 6px 0 0;'
+                f'box-shadow:0 1px 2px rgba(0,0,0,0.04);border-bottom:none;margin-bottom:0;'
+                f'padding-bottom:0;">'
+                f'<div style="background:{GRAY_50};padding:0.35rem 0.5rem;border-bottom:1px solid '
+                f'{GRAY_BORDER};font-size:0.8rem;font-weight:600;color:{NAVY};">'
+                f'Side-by-Side Comparison</div></div>',
+                unsafe_allow_html=True,
+            )
+
+            # D/C input row styled to look like table row
             dc_cols = st.columns([1.5] + [1] * len(selected_plans))
             cp_dc_values = {}
             with dc_cols[0]:
                 st.markdown(
-                    f'<div style="font-size:0.75rem;font-weight:600;color:{GRAY_500};'
-                    f'padding-top:0.4rem;">Debit/(Credit) %</div>',
+                    f'<div style="font-size:0.75rem;font-weight:600;color:{GRAY_700};'
+                    f'padding:0.3rem 0;">Debit/(Credit) %</div>',
                     unsafe_allow_html=True,
                 )
             for idx, plan in enumerate(selected_plans):
@@ -1360,9 +1372,9 @@ with tab_compare:
                     allowable = rate_entry.get("debit_credit") if rate_entry else None
                     if allowable is not None:
                         max_pct = int(abs(allowable) * 100)
-                        lbl = f"D/C (±{max_pct}%)"
+                        lbl = f"Debit/(Credit) % (±{max_pct}%)"
                     else:
-                        lbl = "D/C"
+                        lbl = "Debit/(Credit) %"
 
                     dc_key = f"cp_dc_{plan}"
 
@@ -1379,6 +1391,11 @@ with tab_compare:
                             st.session_state[key] = str(rounded)
                         return _format
 
+                    st.markdown(
+                        f'<div style="font-size:0.7rem;color:{GRAY_500};margin-bottom:2px;">'
+                        f'Debit/(Credit) %</div>',
+                        unsafe_allow_html=True,
+                    )
                     dc_raw = st.text_input(
                         lbl,
                         value="0",
@@ -1552,8 +1569,9 @@ with tab_compare:
                 )
 
             comp_html = (
-                f'<div style="background:white;border:1px solid {GRAY_BORDER};border-radius:6px;'
-                f'overflow:hidden;box-shadow:0 1px 2px rgba(0,0,0,0.04);">'
+                f'<div style="background:white;border:1px solid {GRAY_BORDER};'
+                f'border-radius:0 0 6px 6px;border-top:1px solid {GRAY_BORDER};'
+                f'overflow:hidden;box-shadow:0 1px 2px rgba(0,0,0,0.04);margin-top:-1rem;">'
                 f'<table style="width:100%;border-collapse:collapse;font-size:0.8rem;">'
                 f'<thead><tr style="background:{GRAY_50};border-bottom:1px solid {GRAY_BORDER};">'
                 f'{cmp_header}</tr></thead>'
