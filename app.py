@@ -1356,20 +1356,7 @@ with tab_compare:
                     f'color:{GRAY_700};font-size:0.8rem;">{plan}</th>'
                 )
 
-            # Render table card opening + header
-            st.markdown(
-                f'<div style="background:white;border:1px solid {GRAY_BORDER};border-radius:6px;'
-                f'overflow:hidden;box-shadow:0 1px 2px rgba(0,0,0,0.04);">'
-                f'<div style="background:{GRAY_50};padding:0.35rem 0.5rem;border-bottom:1px solid '
-                f'{GRAY_BORDER};font-size:0.8rem;font-weight:600;color:{NAVY};">'
-                f'Side-by-Side Comparison</div>'
-                f'<table style="width:100%;border-collapse:collapse;font-size:0.8rem;">'
-                f'<thead><tr style="background:{GRAY_50};border-bottom:1px solid {GRAY_BORDER};">'
-                f'{cmp_header}</tr></thead></table></div>',
-                unsafe_allow_html=True,
-            )
-
-            # --- D/C input row (Streamlit widgets styled to look like table row) ---
+            # --- D/C input row above header (Streamlit widgets aligned to plan columns) ---
             dc_cols = st.columns([1.5] + [1] * len(selected_plans))
             cp_dc_values = {}
             with dc_cols[0]:
@@ -1577,8 +1564,10 @@ with tab_compare:
 
             comp_html = (
                 f'<div style="background:white;border:1px solid {GRAY_BORDER};border-radius:6px;'
-                f'border-top-left-radius:0;border-top-right-radius:0;'
-                f'overflow:hidden;box-shadow:0 1px 2px rgba(0,0,0,0.04);margin-top:-1rem;">'
+                f'overflow:hidden;box-shadow:0 1px 2px rgba(0,0,0,0.04);margin-top:-0.5rem;">'
+                f'<div style="background:{GRAY_50};padding:0.35rem 0.5rem;border-bottom:1px solid '
+                f'{GRAY_BORDER};font-size:0.8rem;font-weight:600;color:{NAVY};">'
+                f'Side-by-Side Comparison</div>'
                 f'<table style="width:100%;border-collapse:collapse;font-size:0.8rem;">'
                 f'<thead><tr style="background:{GRAY_50};border-bottom:1px solid {GRAY_BORDER};">'
                 f'{cmp_header}</tr></thead>'
